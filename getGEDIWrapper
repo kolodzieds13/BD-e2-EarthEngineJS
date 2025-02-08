@@ -82,7 +82,7 @@ var modL2B = GEDI_L2B.select(GEDI_L2B_Selection)
 
 
 var GEDI_L2Coll = ee.ImageCollection(
-  ee.Join.saveAll({matchesKey: 'join'}) // This creates a new field
+  ee.Join.saveAll({matchesKey: 'join'}) // This creates a new field in properties
     // Add an 's1' property to each s2 image, with a list of s1 imagery from within 16 days
     .apply({ 
       primary: modL2A, 
@@ -154,17 +154,19 @@ gediMaster = gediMaster
           .float()
           // // .updateMask(GEDI_L4A.select('cover').mask()) //GEDI_L2B_Attribution.reduce('sum').gte(1))//
       })
-      // .qualityMosaic('quality')
-      .first()
-      // .select(['cover','pai','quality'])
-      // .select(['rh25','rh50', 'rh75','rh95','rh98'])
+      .qualityMosaic('quality') // Review Later do i need quality mosaic()
+      // .first()
     return GEDI_L4A.addBands(GEDI_L2Coll_img)
       // .updateMask(GEDI_L4A.select('sensitivity').gte(0.98))
       // .updateMask(GEDI_L2B.select('solar_elevation').lt(0))
   })
-print(gediMaster.first(),"gediMaster")
+print(gediMaster,"gediMaster")
 Map.addLayer(gediMaster,{},"gediMaster FINAL")
 
+
+// Apply Quality Filter
+
+// Join to Landsat
   
 
 // var ExportBands10 = [
