@@ -1,638 +1,703 @@
+/**** Start of imports. If edited, may not auto-convert in the playground. ****/
+var testAOI = 
+    /* color: #d63000 */
+    /* displayProperties: [
+      {
+        "type": "rectangle"
+      }
+    ] */
+    ee.Geometry.Polygon(
+        [[[-124.1908214570261, 48.01747940426768],
+          [-124.1908214570261, 47.88318938949384],
+          [-123.93401603710423, 47.88318938949384],
+          [-123.93401603710423, 48.01747940426768]]], null, false);
+/***** End of imports. If edited, may not auto-convert in the playground. *****/
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 //                GET GEDI Data
 //
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  
 
-var ExportBands10 = [
-  // "agbdINT",
-  "agbd",
-  "blue",
-  "green",
-  "red",
-  "nir",
-  "swir1",
-  "swir2",
-  "NDVI",
-  "NBR",
-  "NDMI",
-  "EVI",
-  "SAVI",
-  "brightness",
-  "greenness",
-  "wetness",
-  "tcAngleBG",
-  "tcAngleGW",
-  "tcAngleBW",
-  "tcDistBG",
-  "tcDistGW",
-  "tcDistBW"]
-  
-var lcmsBands = [
-  'Change_Raw_Probability_Slow_Loss',
-  'Change_Raw_Probability_Fast_Loss',
-  'Change_Raw_Probability_Gain', 
-  'Land_Cover_Raw_Probability_Trees',
-  'lcms_Stable',
-  'lcms_SlowLoss',
-  'lcms_fastLoss',
-  'lcms_Gain'
-  ]
-  
-var lcmsProb = [
-  'Change_Raw_Probability_Slow_Loss',
-  'Change_Raw_Probability_Fast_Loss',
-  'Change_Raw_Probability_Gain', 
-  'Land_Cover_Raw_Probability_Trees'
-  ]
-  
-var texture10000 = ["tcDistBW_asm",
-  "tcDistBW_idm",
-  "tcDistBW_corr",
-  "tcDistBW_sent",
-  "tcDistBW_dent",
-  "tcDistBW_imcorr1",
-  "tcDistBW_imcorr2",
-  
-  "value_asm",
-  "value_idm",
-  "value_corr",
-  "value_sent",
-  "value_dent",
-  "value_imcorr1",
-  "value_imcorr2",
-  
-  "NDPI_asm",
-  "NDPI_idm",
-  "NDPI_corr",
-  "NDPI_sent",
-  "NDPI_dent",
-  "NDPI_imcorr1",
-  "NDPI_imcorr2",
-  
-  "EVI_asm",
-  "EVI_idm",
-  "EVI_corr",
-  "EVI_sent",
-  "EVI_dent",
-  "EVI_imcorr1",
-  "EVI_imcorr2"]
+var conusTransform = {'crs':'PROJCS["Albers_Conical_Equal_Area",GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],TOWGS84[0,0,0,0,0,0,0],AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.0174532925199433,AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4326"]],PROJECTION["Albers_Conic_Equal_Area"],PARAMETER["latitude_of_center",23],PARAMETER["longitude_of_center",-96],PARAMETER["standard_parallel_1",29.5],PARAMETER["standard_parallel_2",45.5],PARAMETER["false_easting",0],PARAMETER["false_northing",0],UNIT["meters",1],AXIS["Easting",EAST],AXIS["Northing",NORTH]]',
+                              'transform': [30,0,-2361915.0,0,-30,3177735.0]};
 
 
-var textureDN = [
-  "tcDistBW_contrast",
-  "tcDistBW_var",
-  "tcDistBW_svar",
-  "tcDistBW_savg",
-  "tcDistBW_dvar",
+var GEDI_L2A = ee.ImageCollection('LARSE/GEDI/GEDI02_A_002_MONTHLY')
+  .filterBounds(testAOI)
+var GEDI_L2B = ee.ImageCollection('LARSE/GEDI/GEDI02_B_002_MONTHLY')
+  .filterBounds(testAOI)
+var GEDI_L4A = ee.ImageCollection('LARSE/GEDI/GEDI04_A_002_MONTHLY')
+  .filterBounds(testAOI)
+
+print('GEDI_L2A',GEDI_L2A.first())
+print('GEDI_L2B',GEDI_L2B.first())
+print('GEDI_L4A',GEDI_L4A.first())
+
+Map.addLayer(GEDI_L2A,{},'GEDI_L2A')
+Map.addLayer(GEDI_L2B,{},"GEDI_L2B")
+Map.addLayer(GEDI_L4A,{},"GEDI_L4A")
+
+
+
+// function preserveId(image) {
+//   return image.set('uniqid', image.get('system:index'));
+// }
+
+
+// var col1 = ee.ImageCollection(manualImages).map(preserveId);
+    
+// var col2 = ee.ImageCollection('COPERNICUS/S2')
+//     .filterBounds(testArea)
+//     .filterDate('2018-01-01', '2018-01-05')
+//     .map(preserveId);
+
+// var mergedCollection = col1.merge(col2);
+
+// var s2Clouds = ee.ImageCollection('COPERNICUS/S2_CLOUD_PROBABILITY')
+//   .filterBounds(testArea)
+//   .map(preserveId);
+
+var masterGEDI = ee.Join.saveFirst('L2B').apply({
+  primary: GEDI_L4A,
+  secondary: GEDI_L2B,
+  condition:
+      ee.Filter.equals({leftField: 'delta_time', rightField: 'delta_time'})
+});
+
+print(masterGEDI);
+
+
+Map.addLayer(ee.Image(masterGEDI.first()),{},"firstGEDI")
+  
+
+// var ExportBands10 = [
+//   // "agbdINT",
+//   "agbd",
+//   "blue",
+//   "green",
+//   "red",
+//   "nir",
+//   "swir1",
+//   "swir2",
+//   "NDVI",
+//   "NBR",
+//   "NDMI",
+//   "EVI",
+//   "SAVI",
+//   "brightness",
+//   "greenness",
+//   "wetness",
+//   "tcAngleBG",
+//   "tcAngleGW",
+//   "tcAngleBW",
+//   "tcDistBG",
+//   "tcDistGW",
+//   "tcDistBW"]
+  
+// var lcmsBands = [
+//   'Change_Raw_Probability_Slow_Loss',
+//   'Change_Raw_Probability_Fast_Loss',
+//   'Change_Raw_Probability_Gain', 
+//   'Land_Cover_Raw_Probability_Trees',
+//   'lcms_Stable',
+//   'lcms_SlowLoss',
+//   'lcms_fastLoss',
+//   'lcms_Gain'
+//   ]
+  
+// var lcmsProb = [
+//   'Change_Raw_Probability_Slow_Loss',
+//   'Change_Raw_Probability_Fast_Loss',
+//   'Change_Raw_Probability_Gain', 
+//   'Land_Cover_Raw_Probability_Trees'
+//   ]
+  
+// var texture10000 = ["tcDistBW_asm",
+//   "tcDistBW_idm",
+//   "tcDistBW_corr",
+//   "tcDistBW_sent",
+//   "tcDistBW_dent",
+//   "tcDistBW_imcorr1",
+//   "tcDistBW_imcorr2",
+  
+//   "value_asm",
+//   "value_idm",
+//   "value_corr",
+//   "value_sent",
+//   "value_dent",
+//   "value_imcorr1",
+//   "value_imcorr2",
+  
+//   "NDPI_asm",
+//   "NDPI_idm",
+//   "NDPI_corr",
+//   "NDPI_sent",
+//   "NDPI_dent",
+//   "NDPI_imcorr1",
+//   "NDPI_imcorr2",
+  
+//   "EVI_asm",
+//   "EVI_idm",
+//   "EVI_corr",
+//   "EVI_sent",
+//   "EVI_dent",
+//   "EVI_imcorr1",
+//   "EVI_imcorr2"]
+
+
+// var textureDN = [
+//   "tcDistBW_contrast",
+//   "tcDistBW_var",
+//   "tcDistBW_svar",
+//   "tcDistBW_savg",
+//   "tcDistBW_dvar",
   
 
   
-  "NDPI_contrast",
-  "NDPI_var",
-  "NDPI_svar",
-  "NDPI_savg",
-  "NDPI_dvar",
+//   "NDPI_contrast",
+//   "NDPI_var",
+//   "NDPI_svar",
+//   "NDPI_savg",
+//   "NDPI_dvar",
   
-  "EVI_contrast",
-  "EVI_var",
-  "EVI_svar",
-  "EVI_savg",
-  "EVI_dvar",
-  ]
+//   "EVI_contrast",
+//   "EVI_var",
+//   "EVI_svar",
+//   "EVI_savg",
+//   "EVI_dvar",
+//   ]
 
-var textureOneThousand = ["tcDistBW_ent", "value_ent","NDPI_ent","EVI_ent",]
+// var textureOneThousand = ["tcDistBW_ent", "value_ent","NDPI_ent","EVI_ent",]
 
-var textureOneHundred = ["value_contrast",
-  "value_var",
-  "value_svar",
-  "value_savg",
-  "value_dvar",]
+// var textureOneHundred = ["value_contrast",
+//   "value_var",
+//   "value_svar",
+//   "value_savg",
+//   "value_dvar",]
 
   
-var reflectanceBands = [
-  "blue",
-  "green",
-  "red",
-  "nir",
-  "swir1",
-  "swir2",
-  "NDVI",
-  "NBR",
-  "NDMI",
-  "EVI",
-  "SAVI",
-  "brightness",
-  "greenness",
-  "wetness",
-  "tcAngleBG",
-  "tcAngleGW",
-  "tcAngleBW",
-  "tcDistBG",
-  "tcDistGW",
-  "tcDistBW"]
+// var reflectanceBands = [
+//   "blue",
+//   "green",
+//   "red",
+//   "nir",
+//   "swir1",
+//   "swir2",
+//   "NDVI",
+//   "NBR",
+//   "NDMI",
+//   "EVI",
+//   "SAVI",
+//   "brightness",
+//   "greenness",
+//   "wetness",
+//   "tcAngleBG",
+//   "tcAngleGW",
+//   "tcAngleBW",
+//   "tcDistBG",
+//   "tcDistGW",
+//   "tcDistBW"]
   
-var ExportBandsFINAL = [
-  // "agbdINT",
-  'agbd',
-  'shot_number_within_beam',
-  'blue',
-  'green',
-  'red',
-  'nir',
-  'swir1',
-  'swir2',
-  'NDVI',
-  'NBR',
-  'NDMI',
-  'EVI',
-  'SAVI',
-  'brightness',
-  'greenness',
-  'wetness',
-  'tcAngleBG',
-  'tcAngleGW',
-  'tcAngleBW',
-  'tcDistBG',
-  'tcDistGW',
-  'tcDistBW',
-  'tcDistBW_asm',
-  'tcDistBW_contrast',
-  'tcDistBW_corr',
-  'tcDistBW_var',
-  'tcDistBW_idm',
-  'tcDistBW_savg',
-  'tcDistBW_svar',
-  'tcDistBW_sent',
-  'tcDistBW_ent',
-  'tcDistBW_dvar',
-  'tcDistBW_dent',
-  'tcDistBW_imcorr1',
-  'tcDistBW_imcorr2',
-  'Change_Raw_Probability_Slow_Loss',
-  'Change_Raw_Probability_Fast_Loss',
-  'Change_Raw_Probability_Gain', 
-  'Land_Cover_Raw_Probability_Trees',
-  'lcms_Stable',
-  'lcms_SlowLoss',
-  'lcms_fastLoss',
-  'lcms_Gain']
+// var ExportBandsFINAL = [
+//   // "agbdINT",
+//   'agbd',
+//   'shot_number_within_beam',
+//   'blue',
+//   'green',
+//   'red',
+//   'nir',
+//   'swir1',
+//   'swir2',
+//   'NDVI',
+//   'NBR',
+//   'NDMI',
+//   'EVI',
+//   'SAVI',
+//   'brightness',
+//   'greenness',
+//   'wetness',
+//   'tcAngleBG',
+//   'tcAngleGW',
+//   'tcAngleBW',
+//   'tcDistBG',
+//   'tcDistGW',
+//   'tcDistBW',
+//   'tcDistBW_asm',
+//   'tcDistBW_contrast',
+//   'tcDistBW_corr',
+//   'tcDistBW_var',
+//   'tcDistBW_idm',
+//   'tcDistBW_savg',
+//   'tcDistBW_svar',
+//   'tcDistBW_sent',
+//   'tcDistBW_ent',
+//   'tcDistBW_dvar',
+//   'tcDistBW_dent',
+//   'tcDistBW_imcorr1',
+//   'tcDistBW_imcorr2',
+//   'Change_Raw_Probability_Slow_Loss',
+//   'Change_Raw_Probability_Fast_Loss',
+//   'Change_Raw_Probability_Gain', 
+//   'Land_Cover_Raw_Probability_Trees',
+//   'lcms_Stable',
+//   'lcms_SlowLoss',
+//   'lcms_fastLoss',
+//   'lcms_Gain']
   
-var textureOnly = [
-  'agbd',
-  'shot_number_within_beam',
-  // 'value_asm',
-  // 'value_contrast',
-  // 'value_corr',
-  // 'value_var',
-  // 'value_idm',
-  // 'value_savg',
-  // 'value_svar',
-  // 'value_sent',
-  // 'value_ent',
-  // 'value_dvar',
-  // 'value_dent',
-  // 'value_imcorr1',
-  // 'value_imcorr2',
+// var textureOnly = [
+//   'agbd',
+//   'shot_number_within_beam',
+//   // 'value_asm',
+//   // 'value_contrast',
+//   // 'value_corr',
+//   // 'value_var',
+//   // 'value_idm',
+//   // 'value_savg',
+//   // 'value_svar',
+//   // 'value_sent',
+//   // 'value_ent',
+//   // 'value_dvar',
+//   // 'value_dent',
+//   // 'value_imcorr1',
+//   // 'value_imcorr2',
   
-  // 'NDPI_asm',
-  // 'NDPI_contrast',
-  // 'NDPI_corr',
-  // 'NDPI_var',
-  // 'NDPI_idm',
-  // 'NDPI_savg',
-  // 'NDPI_svar',
-  // 'NDPI_sent',
-  // 'NDPI_ent',
-  // 'NDPI_dvar',
-  // 'NDPI_dent',
-  // 'NDPI_imcorr1',
-  // 'NDPI_imcorr2',
+//   // 'NDPI_asm',
+//   // 'NDPI_contrast',
+//   // 'NDPI_corr',
+//   // 'NDPI_var',
+//   // 'NDPI_idm',
+//   // 'NDPI_savg',
+//   // 'NDPI_svar',
+//   // 'NDPI_sent',
+//   // 'NDPI_ent',
+//   // 'NDPI_dvar',
+//   // 'NDPI_dent',
+//   // 'NDPI_imcorr1',
+//   // 'NDPI_imcorr2',
   
-  'EVI_asm',
-  'EVI_contrast',
-  'EVI_corr',
-  'EVI_var',
-  'EVI_idm',
-  'EVI_savg',
-  'EVI_svar',
-  'EVI_sent',
-  'EVI_ent',
-  'EVI_dvar',
-  'EVI_dent',
-  'EVI_imcorr1',
-  'EVI_imcorr2',
-  ]
+//   'EVI_asm',
+//   'EVI_contrast',
+//   'EVI_corr',
+//   'EVI_var',
+//   'EVI_idm',
+//   'EVI_savg',
+//   'EVI_svar',
+//   'EVI_sent',
+//   'EVI_ent',
+//   'EVI_dvar',
+//   'EVI_dent',
+//   'EVI_imcorr1',
+//   'EVI_imcorr2',
+//   ]
 
-var qualityMask = function(im) {
-  return im.updateMask(im.select('l4_quality_flag').eq(1))
-      .updateMask(im.select('degrade_flag').eq(0));
-};
+// var qualityMask = function(im) {
+//   return im.updateMask(im.select('l4_quality_flag').eq(1))
+//       .updateMask(im.select('degrade_flag').eq(0));
+// };
 
-var qualityMask99 = function(im) {
-  return im.updateMask(im.select('l2b_quality_flag').eq(1))
-      .updateMask(im.select('degrade_flag').eq(0));
-};
+// var qualityMask99 = function(im) {
+//   return im.updateMask(im.select('l2b_quality_flag').eq(1))
+//       .updateMask(im.select('degrade_flag').eq(0));
+// };
+// // var GEDI_L2B_Attribution = ee.ImageCollection('LARSE/GEDI/GEDI02_B_002_MONTHLY')
+// //                   .map(qualityMask99)
+
+
+// var qualityMask100 = function(im) {
+//   return im.updateMask(im.select('quality_flag').eq(1))
+//       .updateMask(im.select('degrade_flag').eq(0));
+// };
+
+// var reprojectIMG = function(im){
+//   return im.reproject({
+//     crs: 'EPSG:32610',
+//     crsTransform: getImagesLib.common_projections.NLCD_CONUS.transform})
+// }
+
+// var getYear = (function(im){
+//   var date= ee.Date(im.get('system:time_start'))
+//   return im.set('year', ee.Number(date.get('year')))
+// })
+
+// //   })
+
+// // Define a max difference filter to compare timestamps.
+// var maxDiffFilter = ee.Filter.maxDifference({
+//   difference: 24 * 24 * 60 * 60 * 1000,
+//   leftField: 'system:time_start',
+//   rightField: 'system:time_start'
+// });
+
+// var intersects = ee.Filter.intersects({
+//   leftField: '.geo',
+//   rightField: '.geo',
+//   maxError: 10
+// });
+
+
+// var GEDI_L2A_Attribution = ee.ImageCollection('LARSE/GEDI/GEDI02_A_002_MONTHLY')
+//     .map(qualityMask100)
+//     .map(reprojectIMG)
+//     .map(getYear)
+//     .select(['elev_lowestmode', 'digital_elevation_model_srtm'])
+//     // .filterDate('2019-01-01', '2019-12-31')
+//     .filterDate(ee.Date.fromYMD(StartYr,1,1),ee.Date.fromYMD(EndYr,12,31))
+//     .filterBounds(Validation04);
+
+  
+// // var gediSensitivityMask = gediAttribution.select('sensitivity').gte(0.98)
 // var GEDI_L2B_Attribution = ee.ImageCollection('LARSE/GEDI/GEDI02_B_002_MONTHLY')
-//                   .map(qualityMask99)
+//     .map(qualityMask99)
+//     .map(reprojectIMG)
+//     .map(getYear)
+//     .select(['cover', 'sensitivity','shot_number_within_beam']) //'pai'
+//     // .filterDate('2019-01-01', '2019-12-31')
+//     .filterDate(ee.Date.fromYMD(StartYr,1,1),ee.Date.fromYMD(EndYr,12,31))
+//     .filterBounds(Validation04);
 
-
-var qualityMask100 = function(im) {
-  return im.updateMask(im.select('quality_flag').eq(1))
-      .updateMask(im.select('degrade_flag').eq(0));
-};
-
-var reprojectIMG = function(im){
-  return im.reproject({
-    crs: 'EPSG:32610',
-    crsTransform: getImagesLib.common_projections.NLCD_CONUS.transform})
-}
-
-var getYear = (function(im){
-  var date= ee.Date(im.get('system:time_start'))
-  return im.set('year', ee.Number(date.get('year')))
-})
-
+// var gedi4AColl = ee.ImageCollection('LARSE/GEDI/GEDI04_A_002_MONTHLY')
+//     .map(qualityMask)
+//     .map(reprojectIMG)
+//     .map(getYear)
+//     .select(['agbd', 'solar_elevation'])
+//     // .filterDate('2019-01-01', '2019-12-31')
+//     .filterDate(ee.Date.fromYMD(StartYr,1,1),ee.Date.fromYMD(EndYr,12,31))
+//     .filterBounds(Validation04);
+    
+// var gediMaster = ee.ImageCollection(
+//   ee.Join.saveAll({matchesKey: 'gedi'})
+//     // Add an 's1' property to each s2 image, with a list of s1 imagery from within 16 days
+//     .apply({ 
+//       primary: GEDI_L2B_Attribution, 
+//       secondary: gedi4AColl, 
+//       condition: ee.Filter.and(maxDiffFilter, intersects)
+//     })
+//   )
+//   // Add the s1 band (a mosaica from the pixels closest to the s2 image)
+//   .map(function (GEDI_L2B_Attribution) {
+//     var gedi4AColl = ee.ImageCollection.fromImages(
+//         ee.List(GEDI_L2B_Attribution.get('gedi'))
+//       )
+//       .map(function (gedi4AColl) {
+//         var quality = ee.Image(
+//             gedi4AColl.date()
+//               .difference(GEDI_L2B_Attribution.date(), 'day')
+//               .abs()
+//               .multiply(-1)
+//           )
+//           .rename('quality') // -(number of days from the s2 image)
+//         return gedi4AColl
+//           .addBands(quality)
+//           .float()
+//           .updateMask(GEDI_L2B_Attribution.select('cover').mask()) //GEDI_L2B_Attribution.reduce('sum').gte(1))//
+//       })
+//       .qualityMosaic('quality') 
+//       .select(['agbd', 'solar_elevation'])
+//     return GEDI_L2B_Attribution.addBands(gedi4AColl)
+//       .updateMask(GEDI_L2B_Attribution.select('sensitivity').gte(0.98))
+//       .updateMask(gedi4AColl.select('solar_elevation').lt(0))
 //   })
 
-// Define a max difference filter to compare timestamps.
-var maxDiffFilter = ee.Filter.maxDifference({
-  difference: 24 * 24 * 60 * 60 * 1000,
-  leftField: 'system:time_start',
-  rightField: 'system:time_start'
-});
+// // // Map.addLayer(gediMaster.mosaic().select('B3'), {min: -1, max: 1}, 'green')
+// // Map.addLayer(gediMaster.mosaic().select('agbd'), {min: 0, max: 800}, 'agbd')
+// // Map.addLayer(gediMaster.mosaic().select('sensitivity'), {min: .85, max: 1}, 'sensitivity')
+// // Map.addLayer(gediMaster.mosaic().select('solar_elevation'), {min: -30, max: 30}, 'solar_elevation')
+// // Map.addLayer(gediMaster.mosaic().select('cover'), {min: 0, max: 1}, 'cover')
 
-var intersects = ee.Filter.intersects({
-  leftField: '.geo',
-  rightField: '.geo',
-  maxError: 10
-});
+// print(gediMaster.mosaic(), "GEDI MASTER")
 
-
-var GEDI_L2A_Attribution = ee.ImageCollection('LARSE/GEDI/GEDI02_A_002_MONTHLY')
-    .map(qualityMask100)
-    .map(reprojectIMG)
-    .map(getYear)
-    .select(['elev_lowestmode', 'digital_elevation_model_srtm'])
-    // .filterDate('2019-01-01', '2019-12-31')
-    .filterDate(ee.Date.fromYMD(StartYr,1,1),ee.Date.fromYMD(EndYr,12,31))
-    .filterBounds(Validation04);
-
-  
-// var gediSensitivityMask = gediAttribution.select('sensitivity').gte(0.98)
-var GEDI_L2B_Attribution = ee.ImageCollection('LARSE/GEDI/GEDI02_B_002_MONTHLY')
-    .map(qualityMask99)
-    .map(reprojectIMG)
-    .map(getYear)
-    .select(['cover', 'sensitivity','shot_number_within_beam']) //'pai'
-    // .filterDate('2019-01-01', '2019-12-31')
-    .filterDate(ee.Date.fromYMD(StartYr,1,1),ee.Date.fromYMD(EndYr,12,31))
-    .filterBounds(Validation04);
-
-var gedi4AColl = ee.ImageCollection('LARSE/GEDI/GEDI04_A_002_MONTHLY')
-    .map(qualityMask)
-    .map(reprojectIMG)
-    .map(getYear)
-    .select(['agbd', 'solar_elevation'])
-    // .filterDate('2019-01-01', '2019-12-31')
-    .filterDate(ee.Date.fromYMD(StartYr,1,1),ee.Date.fromYMD(EndYr,12,31))
-    .filterBounds(Validation04);
-    
-var gediMaster = ee.ImageCollection(
-  ee.Join.saveAll({matchesKey: 'gedi'})
-    // Add an 's1' property to each s2 image, with a list of s1 imagery from within 16 days
-    .apply({ 
-      primary: GEDI_L2B_Attribution, 
-      secondary: gedi4AColl, 
-      condition: ee.Filter.and(maxDiffFilter, intersects)
-    })
-  )
-  // Add the s1 band (a mosaica from the pixels closest to the s2 image)
-  .map(function (GEDI_L2B_Attribution) {
-    var gedi4AColl = ee.ImageCollection.fromImages(
-        ee.List(GEDI_L2B_Attribution.get('gedi'))
-      )
-      .map(function (gedi4AColl) {
-        var quality = ee.Image(
-            gedi4AColl.date()
-              .difference(GEDI_L2B_Attribution.date(), 'day')
-              .abs()
-              .multiply(-1)
-          )
-          .rename('quality') // -(number of days from the s2 image)
-        return gedi4AColl
-          .addBands(quality)
-          .float()
-          .updateMask(GEDI_L2B_Attribution.select('cover').mask()) //GEDI_L2B_Attribution.reduce('sum').gte(1))//
-      })
-      .qualityMosaic('quality') 
-      .select(['agbd', 'solar_elevation'])
-    return GEDI_L2B_Attribution.addBands(gedi4AColl)
-      .updateMask(GEDI_L2B_Attribution.select('sensitivity').gte(0.98))
-      .updateMask(gedi4AColl.select('solar_elevation').lt(0))
-  })
-
-// // Map.addLayer(gediMaster.mosaic().select('B3'), {min: -1, max: 1}, 'green')
-// Map.addLayer(gediMaster.mosaic().select('agbd'), {min: 0, max: 800}, 'agbd')
-// Map.addLayer(gediMaster.mosaic().select('sensitivity'), {min: .85, max: 1}, 'sensitivity')
-// Map.addLayer(gediMaster.mosaic().select('solar_elevation'), {min: -30, max: 30}, 'solar_elevation')
-// Map.addLayer(gediMaster.mosaic().select('cover'), {min: 0, max: 1}, 'cover')
-
-print(gediMaster.mosaic(), "GEDI MASTER")
-
-//////////////////////////////////////////////////////////////////
-//
-//             Add Elevation Data
-//
-///////////////////////////////////////////////////////////////// 
-
-
-
-var gediMaster_wElevataion = ee.ImageCollection(
-  ee.Join.saveAll({matchesKey: 'gedi'})
-    // Add an 's1' property to each s2 image, with a list of s1 imagery from within 16 days
-    .apply({ 
-      primary: GEDI_L2A_Attribution, 
-      secondary: gediMaster, 
-      condition: ee.Filter.and(maxDiffFilter, intersects)
-    })
-  )
-  // Add the s1 band (a mosaic from the pixels closest to the s2 image)
-  .map(function (GEDI_L2A_Attribution) {
-    var gediMaster = ee.ImageCollection.fromImages(
-        ee.List(GEDI_L2A_Attribution.get('gedi'))
-      )
-      .map(function (gediMaster) {
-        var quality = ee.Image(
-            gediMaster.date()
-              .difference(GEDI_L2A_Attribution.date(), 'day')
-              .abs()
-              .multiply(-1)
-          )
-          .rename('quality') // -(number of days from the s2 image)
-        return gediMaster
-          .addBands(quality)
-          .float()
-          .updateMask(GEDI_L2A_Attribution.select('elev_lowestmode').mask())//.mask()).updateMask(GEDI_L2B_Attribution.select('cover').mask())
-      })
-      .qualityMosaic('quality') 
-      .select(['agbd', 'solar_elevation','sensitivity','cover', 'shot_number_within_beam'])
-    return GEDI_L2A_Attribution.addBands(gediMaster)
-      .updateMask(gediMaster.select('sensitivity').gte(0.98))
-      .updateMask(gediMaster.select('solar_elevation').lt(0))
-      .updateMask((GEDI_L2A_Attribution.select('elev_lowestmode').subtract(GEDI_L2A_Attribution.select('digital_elevation_model_srtm'))).abs().lt(100))
-  })
-
-// Map.addLayer(gediMaster_wElevataion.mosaic().select('agbd'), {min: 0, max: 800}, 'agbd')
-// Map.addLayer(gediMaster_wElevataion.mosaic().select('sensitivity'), {min: .85, max: 1}, 'sensitivity')
-// Map.addLayer(gediMaster_wElevataion.mosaic().select('solar_elevation'), {min: -30, max: 30}, 'solar_elevation')
-// Map.addLayer(gediMaster_wElevataion.mosaic().select('cover'), {min: 0, max: 1}, 'cover')
-// Map.addLayer(gediMaster_wElevataion.mosaic().select('elev_lowestmode'), {min: -30, max: 30}, 'elev_lowestmode')
-// Map.addLayer(gediMaster_wElevataion.mosaic().select('digital_elevation_model_srtm'), {min: 0, max: 1}, 'digital_elevation_model_srtm')
-
-print(gediMaster_wElevataion.mosaic(), "GEDI MASTER")
-
-
-// /////////////////////////////////////////////////////////////////////
+// //////////////////////////////////////////////////////////////////
 // //
-// //             Get LCMS
+// //             Add Elevation Data
 // //
-// //////////////////////////////////////////////////////////////////     
+// ///////////////////////////////////////////////////////////////// 
+
+
+
+// var gediMaster_wElevataion = ee.ImageCollection(
+//   ee.Join.saveAll({matchesKey: 'gedi'})
+//     // Add an 's1' property to each s2 image, with a list of s1 imagery from within 16 days
+//     .apply({ 
+//       primary: GEDI_L2A_Attribution, 
+//       secondary: gediMaster, 
+//       condition: ee.Filter.and(maxDiffFilter, intersects)
+//     })
+//   )
+//   // Add the s1 band (a mosaic from the pixels closest to the s2 image)
+//   .map(function (GEDI_L2A_Attribution) {
+//     var gediMaster = ee.ImageCollection.fromImages(
+//         ee.List(GEDI_L2A_Attribution.get('gedi'))
+//       )
+//       .map(function (gediMaster) {
+//         var quality = ee.Image(
+//             gediMaster.date()
+//               .difference(GEDI_L2A_Attribution.date(), 'day')
+//               .abs()
+//               .multiply(-1)
+//           )
+//           .rename('quality') // -(number of days from the s2 image)
+//         return gediMaster
+//           .addBands(quality)
+//           .float()
+//           .updateMask(GEDI_L2A_Attribution.select('elev_lowestmode').mask())//.mask()).updateMask(GEDI_L2B_Attribution.select('cover').mask())
+//       })
+//       .qualityMosaic('quality') 
+//       .select(['agbd', 'solar_elevation','sensitivity','cover', 'shot_number_within_beam'])
+//     return GEDI_L2A_Attribution.addBands(gediMaster)
+//       .updateMask(gediMaster.select('sensitivity').gte(0.98))
+//       .updateMask(gediMaster.select('solar_elevation').lt(0))
+//       .updateMask((GEDI_L2A_Attribution.select('elev_lowestmode').subtract(GEDI_L2A_Attribution.select('digital_elevation_model_srtm'))).abs().lt(100))
+//   })
+
+// // Map.addLayer(gediMaster_wElevataion.mosaic().select('agbd'), {min: 0, max: 800}, 'agbd')
+// // Map.addLayer(gediMaster_wElevataion.mosaic().select('sensitivity'), {min: .85, max: 1}, 'sensitivity')
+// // Map.addLayer(gediMaster_wElevataion.mosaic().select('solar_elevation'), {min: -30, max: 30}, 'solar_elevation')
+// // Map.addLayer(gediMaster_wElevataion.mosaic().select('cover'), {min: 0, max: 1}, 'cover')
+// // Map.addLayer(gediMaster_wElevataion.mosaic().select('elev_lowestmode'), {min: -30, max: 30}, 'elev_lowestmode')
+// // Map.addLayer(gediMaster_wElevataion.mosaic().select('digital_elevation_model_srtm'), {min: 0, max: 1}, 'digital_elevation_model_srtm')
+
+// print(gediMaster_wElevataion.mosaic(), "GEDI MASTER")
+
+
+// // /////////////////////////////////////////////////////////////////////
+// // //
+// // //             Get LCMS
+// // //
+// // //////////////////////////////////////////////////////////////////     
   
   
-// var endYear = yr+1
+// // var endYear = yr+1
 
-// print(endYear.toString(),"end Year")
+// // print(endYear.toString(),"end Year")
 
-// var lcmsProj = LCMS.filter('study_area == "CONUS"').first().projection().getInfo()
-// var lcmsCRS = lcmsProj.crs
-// var lcmsTransform = lcmsProj.transform
+// // var lcmsProj = LCMS.filter('study_area == "CONUS"').first().projection().getInfo()
+// // var lcmsCRS = lcmsProj.crs
+// // var lcmsTransform = lcmsProj.transform
 
-var lcms_selection = LCMS
-  .filterDate(ee.Date.fromYMD(StartYr,1,1),ee.Date.fromYMD(EndYr,12,31))
-  // .filterDate('2019-01-01', '2019-12-31')  // range: [1985, 2022]
-  .filter('study_area == "CONUS"')
-  .filterBounds(Validation04)
+// var lcms_selection = LCMS
+//   .filterDate(ee.Date.fromYMD(StartYr,1,1),ee.Date.fromYMD(EndYr,12,31))
+//   // .filterDate('2019-01-01', '2019-12-31')  // range: [1985, 2022]
+//   .filter('study_area == "CONUS"')
+//   .filterBounds(Validation04)
           
-var lcms_data = lcms_selection.map(reprojectIMG).map(getYear)
+// var lcms_data = lcms_selection.map(reprojectIMG).map(getYear)
 
           
-var lcms_dataPrepped = lcms_data.map(function(img){
-  var lcmsLandCover = img.select(['Land_Cover'])
-  var lcsmProbability = img.select(['Change_Raw_Probability_Slow_Loss',
-    'Change_Raw_Probability_Fast_Loss','Change_Raw_Probability_Gain', 
-    'Land_Cover_Raw_Probability_Trees'])
+// var lcms_dataPrepped = lcms_data.map(function(img){
+//   var lcmsLandCover = img.select(['Land_Cover'])
+//   var lcsmProbability = img.select(['Change_Raw_Probability_Slow_Loss',
+//     'Change_Raw_Probability_Fast_Loss','Change_Raw_Probability_Gain', 
+//     'Land_Cover_Raw_Probability_Trees'])
     
-  var lcmsChange = img.select(['Change']) //.select(['Change', 'Land_Cover', 'Land_Use'])
+//   var lcmsChange = img.select(['Change']) //.select(['Change', 'Land_Cover', 'Land_Use'])
   
   
   
   
-      // Create a binary mask.
-  var stable = lcmsChange.eq(1).select(['Change'],['lcms_Stable']);
-  var slowLoss = lcmsChange.eq(2).select(['Change'],['lcms_SlowLoss']);
-  var fastLoss = lcmsChange.eq(3).select(['Change'],['lcms_fastLoss']);
-  var gain = lcmsChange.eq(4).select(['Change'],['lcms_Gain']);
+//       // Create a binary mask.
+//   var stable = lcmsChange.eq(1).select(['Change'],['lcms_Stable']);
+//   var slowLoss = lcmsChange.eq(2).select(['Change'],['lcms_SlowLoss']);
+//   var fastLoss = lcmsChange.eq(3).select(['Change'],['lcms_fastLoss']);
+//   var gain = lcmsChange.eq(4).select(['Change'],['lcms_Gain']);
   
-  var lmcsChangeDummy = stable.addBands(slowLoss).addBands(fastLoss).addBands(gain).addBands(lcsmProbability)
-  return lmcsChangeDummy
-  // Map.addLayer(lmcsChangeDummy,{},"lmcsChangeDummy")
+//   var lmcsChangeDummy = stable.addBands(slowLoss).addBands(fastLoss).addBands(gain).addBands(lcsmProbability)
+//   return lmcsChangeDummy
+//   // Map.addLayer(lmcsChangeDummy,{},"lmcsChangeDummy")
 
-})
+// })
 
-//       // Define a max difference filter to compare timestamps.
-//       var maxDiffFilterLCMS = ee.Filter.maxDifference({
-//         difference: 152 * 24 * 60 * 60 * 1000,
-//         leftField: 'system:time_start',
-//         rightField: 'system:time_start'
-//       });
+// //       // Define a max difference filter to compare timestamps.
+// //       var maxDiffFilterLCMS = ee.Filter.maxDifference({
+// //         difference: 152 * 24 * 60 * 60 * 1000,
+// //         leftField: 'system:time_start',
+// //         rightField: 'system:time_start'
+// //       });
 
-var filter = ee.Filter.equals({
-  leftField: 'system:year',
-  rightField: 'system:year'
-});
+// var filter = ee.Filter.equals({
+//   leftField: 'system:year',
+//   rightField: 'system:year'
+// });
 
 
 
-var gediMaster_wElevYear = gediMaster_wElevataion.map(getYear)
+// var gediMaster_wElevYear = gediMaster_wElevataion.map(getYear)
 
-    // Define the join.
-var innerJoin = ee.Join.inner('primary', 'secondary');
+//     // Define the join.
+// var innerJoin = ee.Join.inner('primary', 'secondary');
 
-// Applt join
-var collectionJoin = ee.ImageCollection(innerJoin.apply(lcms_dataPrepped, gediMaster_wElevYear, filter ));
+// // Applt join
+// var collectionJoin = ee.ImageCollection(innerJoin.apply(lcms_dataPrepped, gediMaster_wElevYear, filter ));
 
-var gediMasterLCMS = collectionJoin.map(function(feature) {
-  var gediIMG = ee.Image(feature.get('secondary'))
-  var lcmsData = ee.Image(feature.get('primary'))
+// var gediMasterLCMS = collectionJoin.map(function(feature) {
+//   var gediIMG = ee.Image(feature.get('secondary'))
+//   var lcmsData = ee.Image(feature.get('primary'))
   
-  return gediIMG.addBands(lcmsData).updateMask(gnnMask)
+//   return gediIMG.addBands(lcmsData).updateMask(gnnMask)
   
-});
+// });
 
-  
-
-// Map.addLayer(gediMasterLandsat.mosaic().select('B3'), {min: 0, max: 1}, 'green')
-// Map.addLayer(gediMasterLandsat.mosaic().select('agbd'), {min: 0, max: 800}, 'agbd')
-// Map.addLayer(gediMasterLandsat.mosaic().select('sensitivity'), {min: .85, max: 1}, 'sensitivity')
-// Map.addLayer(gediMasterLandsat.mosaic().select('solar_elevation'), {min: -30, max: 30}, 'solar_elevation')
-// Map.addLayer(gediMasterLandsat.mosaic().select('cover'), {min: 0, max: 1}, 'cover')
-
-print(gediMasterLCMS.mosaic(), "GEDI MASTER LANDSAT LCMS")
   
 
-//////////////////////////////////////////////////////////////////
-//
-//             Initial Landsat & GEDI Join
-//
-/////////////////////////////////////////////////////////////////    
+// // Map.addLayer(gediMasterLandsat.mosaic().select('B3'), {min: 0, max: 1}, 'green')
+// // Map.addLayer(gediMasterLandsat.mosaic().select('agbd'), {min: 0, max: 800}, 'agbd')
+// // Map.addLayer(gediMasterLandsat.mosaic().select('sensitivity'), {min: .85, max: 1}, 'sensitivity')
+// // Map.addLayer(gediMasterLandsat.mosaic().select('solar_elevation'), {min: -30, max: 30}, 'solar_elevation')
+// // Map.addLayer(gediMasterLandsat.mosaic().select('cover'), {min: 0, max: 1}, 'cover')
+
+// print(gediMasterLCMS.mosaic(), "GEDI MASTER LANDSAT LCMS")
+  
+
+// //////////////////////////////////////////////////////////////////
+// //
+// //             Initial Landsat & GEDI Join
+// //
+// /////////////////////////////////////////////////////////////////    
     
-// // print(primary)
-// // Load a primary collection: Landsat imagery.
-// var lsColl = ee.ImageCollection('LANDSAT/LC08/C02/T1_TOA')
-//     .map(reprojectIMG)
-//     .filterDate('2019-04-01', '2021-10-01')
-//     .filterBounds(aoi);
+// // // print(primary)
+// // // Load a primary collection: Landsat imagery.
+// // var lsColl = ee.ImageCollection('LANDSAT/LC08/C02/T1_TOA')
+// //     .map(reprojectIMG)
+// //     .filterDate('2019-04-01', '2021-10-01')
+// //     .filterBounds(aoi);
 
 
-var gediMasterLandsatLCMS = ee.ImageCollection(
-  ee.Join.saveAll({matchesKey: 'gedi'})
-    // Add an 's1' property to each s2 image, with a list of s1 imagery from within 16 days
-    .apply({ 
-      primary: lsPrep_wIndicies, 
-      secondary: gediMasterLCMS, 
-      condition: ee.Filter.and(maxDiffFilter, intersects)
-    })
-  )
-  // Add the s1 band (a mosaic from the pixels closest to the s2 image)
-  .map(function (lsPrep_wIndicies) {
-    var gediMasterLCMS = ee.ImageCollection.fromImages(
-        ee.List(lsPrep_wIndicies.get('gedi'))
-      )
-      .map(function (gediMasterLCMS) {
-        var quality = ee.Image(
-            gediMasterLCMS.date()
-              .difference(lsPrep_wIndicies.date(), 'day')
-              .abs()
-              .multiply(-1)
-          )
-          .rename('quality') // -(number of days from the s2 image)
-        return gediMasterLCMS
-          .addBands(quality)
-          .float()
-          .updateMask(lsPrep_wIndicies.reduce('sum').gte(1))//.mask())
-      })
-      .qualityMosaic('quality') 
-      .select(['agbd', 'solar_elevation','sensitivity','cover','shot_number_within_beam','elev_lowestmode','digital_elevation_model_srtm',
-          'Change_Raw_Probability_Slow_Loss','Change_Raw_Probability_Fast_Loss','Change_Raw_Probability_Gain', 
-          'Land_Cover_Raw_Probability_Trees','lcms_Stable','lcms_SlowLoss','lcms_fastLoss','lcms_Gain'])
-    return lsPrep_wIndicies.addBands(gediMasterLCMS)
-      .updateMask(gnnMask)
-  })
+// var gediMasterLandsatLCMS = ee.ImageCollection(
+//   ee.Join.saveAll({matchesKey: 'gedi'})
+//     // Add an 's1' property to each s2 image, with a list of s1 imagery from within 16 days
+//     .apply({ 
+//       primary: lsPrep_wIndicies, 
+//       secondary: gediMasterLCMS, 
+//       condition: ee.Filter.and(maxDiffFilter, intersects)
+//     })
+//   )
+//   // Add the s1 band (a mosaic from the pixels closest to the s2 image)
+//   .map(function (lsPrep_wIndicies) {
+//     var gediMasterLCMS = ee.ImageCollection.fromImages(
+//         ee.List(lsPrep_wIndicies.get('gedi'))
+//       )
+//       .map(function (gediMasterLCMS) {
+//         var quality = ee.Image(
+//             gediMasterLCMS.date()
+//               .difference(lsPrep_wIndicies.date(), 'day')
+//               .abs()
+//               .multiply(-1)
+//           )
+//           .rename('quality') // -(number of days from the s2 image)
+//         return gediMasterLCMS
+//           .addBands(quality)
+//           .float()
+//           .updateMask(lsPrep_wIndicies.reduce('sum').gte(1))//.mask())
+//       })
+//       .qualityMosaic('quality') 
+//       .select(['agbd', 'solar_elevation','sensitivity','cover','shot_number_within_beam','elev_lowestmode','digital_elevation_model_srtm',
+//           'Change_Raw_Probability_Slow_Loss','Change_Raw_Probability_Fast_Loss','Change_Raw_Probability_Gain', 
+//           'Land_Cover_Raw_Probability_Trees','lcms_Stable','lcms_SlowLoss','lcms_fastLoss','lcms_Gain'])
+//     return lsPrep_wIndicies.addBands(gediMasterLCMS)
+//       .updateMask(gnnMask)
+//   })
 
-// Map.addLayer(gediMasterLandsat.mosaic().select('B3'), {min: 0, max: 1}, 'green')
-// Map.addLayer(gediMasterLandsat.mosaic().select('agbd'), {min: 0, max: 800}, 'agbd')
-// Map.addLayer(gediMasterLandsat.mosaic().select('sensitivity'), {min: .85, max: 1}, 'sensitivity')
-// Map.addLayer(gediMasterLandsat.mosaic().select('solar_elevation'), {min: -30, max: 30}, 'solar_elevation')
-// Map.addLayer(gediMasterLandsat.mosaic().select('cover'), {min: 0, max: 1}, 'cover')
+// // Map.addLayer(gediMasterLandsat.mosaic().select('B3'), {min: 0, max: 1}, 'green')
+// // Map.addLayer(gediMasterLandsat.mosaic().select('agbd'), {min: 0, max: 800}, 'agbd')
+// // Map.addLayer(gediMasterLandsat.mosaic().select('sensitivity'), {min: .85, max: 1}, 'sensitivity')
+// // Map.addLayer(gediMasterLandsat.mosaic().select('solar_elevation'), {min: -30, max: 30}, 'solar_elevation')
+// // Map.addLayer(gediMasterLandsat.mosaic().select('cover'), {min: 0, max: 1}, 'cover')
 
-print(gediMasterLandsatLCMS.mosaic(), "GEDI MASTER LANDSAT LCMS V2")
-
-
-
+// print(gediMasterLandsatLCMS.mosaic(), "GEDI MASTER LANDSAT LCMS V2")
 
 
 
 
-///////////////////////////////////////////////////////////////////////////////////////////////
-//
-//               NDVI geoFilter Prep
-//
-///////////////////////////////////////////////////////////////////////////////////////////////
-
-var gediMasterLandsatKenobi = gediMasterLandsatLCMS.qualityMosaic('agbd').clip(Validation04)  
-
-var ndvi = gediMasterLandsatKenobi.select('NDVI')
-var cover = gediMasterLandsatKenobi.select('cover')
-
-// Map.addLayer(ndvi,{},"ndvi")
-// Map.addLayer(cover,{},"cover")
-
-var geoDiffNDVIprepped = (cover.subtract(ndvi)).abs().rename('geoDiff')
-
-// Map.addLayer(geoDiffNDVIprepped,{},"geoDiffNDVIprepped")
-
-var reducers = ee.Reducer.mean().combine({
-  reducer2: ee.Reducer.stdDev(),
-  sharedInputs: true});
-
-
-var stats = geoDiffNDVIprepped.reduceRegion({
-    reducer: reducers,
-    geometry: Validation04,
-    crs: 'EPSG:32610',
-    crsTransform: getImagesLib.common_projections.NLCD_CONUS.transform,
-    maxPixels: 1e10
-})
-
-
-var geoDiffMean = ee.Number(stats.get('geoDiff_mean'))
-// print(geoDiffMean)
-
-var geoDiffSTD = ee.Number(stats.get('geoDiff_stdDev'))
-// print(geoDiffSTD)
-
-var geoDiffFilter = geoDiffNDVIprepped.divide(geoDiffSTD)
-
-var geoDiffFilterMask = geoDiffFilter.lt(1)
-
-// Map.addLayer(geoDiffFilter.gte(1),{}, "Removed GEDI Samples")
-// Map.addLayer(geoDiffFilter.lt(1),{}, "Preserved GEDI Samples")
-
-gediMasterLandsatKenobi = gediMasterLandsatKenobi.updateMask(geoDiffFilterMask)
 
 
 
-// Map.addLayer(gediMasterLandsatKenobi.select('NDVI'), {min: 0, max: 10000}, 'NDVI')
-// Map.addLayer(gediMasterLandsatKenobi.select('agbd'), {min: 0, max: 800}, 'agbd')
-// Map.addLayer(gediMasterLandsatKenobi.select('sensitivity'), {min: .85, max: 1}, 'sensitivity')
-// Map.addLayer(gediMasterLandsatKenobi.select('solar_elevation'), {min: -30, max: 30}, 'solar_elevation')
-// Map.addLayer(gediMasterLandsatKenobi.select('cover'), {min: 0, max: 1}, 'cover')
+// ///////////////////////////////////////////////////////////////////////////////////////////////
+// //
+// //               NDVI geoFilter Prep
+// //
+// ///////////////////////////////////////////////////////////////////////////////////////////////
 
-print(gediMasterLandsatKenobi, "GEDI MASTER LANDSAT Kenobi") 
+// var gediMasterLandsatKenobi = gediMasterLandsatLCMS.qualityMosaic('agbd').clip(Validation04)  
 
+// var ndvi = gediMasterLandsatKenobi.select('NDVI')
+// var cover = gediMasterLandsatKenobi.select('cover')
 
+// // Map.addLayer(ndvi,{},"ndvi")
+// // Map.addLayer(cover,{},"cover")
 
-//////////////////////////////////////////////////////////////////////
-//
-//             FINAL UPDATE
-//
-/////////////////////////////////////////////////////////////////////////
+// var geoDiffNDVIprepped = (cover.subtract(ndvi)).abs().rename('geoDiff')
 
-var optical = gediMasterLandsatKenobi.select(reflectanceBands).multiply(10000)
-var texture01 = gediMasterLandsatKenobi.select(texture10000).multiply(10000)
-var texture02 = gediMasterLandsatKenobi.select(textureOneThousand).multiply(1000) //Multiply by 1000
-var texture03 = gediMasterLandsatKenobi.select(textureOneHundred).multiply(100)
+// // Map.addLayer(geoDiffNDVIprepped,{},"geoDiffNDVIprepped")
 
-
-var composites = gediMasterLandsatKenobi.addBands(optical,null,true).addBands(texture01,null,true)
-  .addBands(texture02,null,true).addBands(texture03,null,true)
-  // .select(ExportBandsFINAL).int16()//.select(ExportBands10)
-  .select(textureOnly).int16()
-
-Map.addLayer(composites,{},"composites")
+// var reducers = ee.Reducer.mean().combine({
+//   reducer2: ee.Reducer.stdDev(),
+//   sharedInputs: true});
 
 
+// var stats = geoDiffNDVIprepped.reduceRegion({
+//     reducer: reducers,
+//     geometry: Validation04,
+//     crs: 'EPSG:32610',
+//     crsTransform: getImagesLib.common_projections.NLCD_CONUS.transform,
+//     maxPixels: 1e10
+// })
 
-getImagesLib.exportToAssetWrapper(
-  composites,//gediMasterLandsatKenobi,
-  "GEDI_Master_Landsat_Kenobi_"+StartYr.toString()+"_"+EndYr.toString()+"_"+IDs.toString(),
-  args.exportPathRoot+'/GEDI_Master_Landsat_Kenobi_yr'+StartYr.toString()+'_yr'+EndYr.toString()+'_textureOnly_'+IDs.toString(),
-  {'.default':'sample'},
-  args.studyArea,
-  null,
-  args.crs,
-  args.transform);
+
+// var geoDiffMean = ee.Number(stats.get('geoDiff_mean'))
+// // print(geoDiffMean)
+
+// var geoDiffSTD = ee.Number(stats.get('geoDiff_stdDev'))
+// // print(geoDiffSTD)
+
+// var geoDiffFilter = geoDiffNDVIprepped.divide(geoDiffSTD)
+
+// var geoDiffFilterMask = geoDiffFilter.lt(1)
+
+// // Map.addLayer(geoDiffFilter.gte(1),{}, "Removed GEDI Samples")
+// // Map.addLayer(geoDiffFilter.lt(1),{}, "Preserved GEDI Samples")
+
+// gediMasterLandsatKenobi = gediMasterLandsatKenobi.updateMask(geoDiffFilterMask)
+
+
+
+// // Map.addLayer(gediMasterLandsatKenobi.select('NDVI'), {min: 0, max: 10000}, 'NDVI')
+// // Map.addLayer(gediMasterLandsatKenobi.select('agbd'), {min: 0, max: 800}, 'agbd')
+// // Map.addLayer(gediMasterLandsatKenobi.select('sensitivity'), {min: .85, max: 1}, 'sensitivity')
+// // Map.addLayer(gediMasterLandsatKenobi.select('solar_elevation'), {min: -30, max: 30}, 'solar_elevation')
+// // Map.addLayer(gediMasterLandsatKenobi.select('cover'), {min: 0, max: 1}, 'cover')
+
+// print(gediMasterLandsatKenobi, "GEDI MASTER LANDSAT Kenobi") 
+
+
+
+// //////////////////////////////////////////////////////////////////////
+// //
+// //             FINAL UPDATE
+// //
+// /////////////////////////////////////////////////////////////////////////
+
+// var optical = gediMasterLandsatKenobi.select(reflectanceBands).multiply(10000)
+// var texture01 = gediMasterLandsatKenobi.select(texture10000).multiply(10000)
+// var texture02 = gediMasterLandsatKenobi.select(textureOneThousand).multiply(1000) //Multiply by 1000
+// var texture03 = gediMasterLandsatKenobi.select(textureOneHundred).multiply(100)
+
+
+// var composites = gediMasterLandsatKenobi.addBands(optical,null,true).addBands(texture01,null,true)
+//   .addBands(texture02,null,true).addBands(texture03,null,true)
+//   // .select(ExportBandsFINAL).int16()//.select(ExportBands10)
+//   .select(textureOnly).int16()
+
+// Map.addLayer(composites,{},"composites")
+
+
+
+// getImagesLib.exportToAssetWrapper(
+//   composites,//gediMasterLandsatKenobi,
+//   "GEDI_Master_Landsat_Kenobi_"+StartYr.toString()+"_"+EndYr.toString()+"_"+IDs.toString(),
+//   args.exportPathRoot+'/GEDI_Master_Landsat_Kenobi_yr'+StartYr.toString()+'_yr'+EndYr.toString()+'_textureOnly_'+IDs.toString(),
+//   {'.default':'sample'},
+//   args.studyArea,
+//   null,
+//   args.crs,
+//   args.transform);
 
 
