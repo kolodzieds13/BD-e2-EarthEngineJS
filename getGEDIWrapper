@@ -1,6 +1,7 @@
 /**** Start of imports. If edited, may not auto-convert in the playground. ****/
 var testAOI = 
     /* color: #d63000 */
+    /* shown: false */
     /* displayProperties: [
       {
         "type": "rectangle"
@@ -33,41 +34,137 @@ print('GEDI_L2A',GEDI_L2A.first())
 print('GEDI_L2B',GEDI_L2B.first())
 print('GEDI_L4A',GEDI_L4A.first())
 
-Map.addLayer(GEDI_L2A,{},'GEDI_L2A')
-Map.addLayer(GEDI_L2B,{},"GEDI_L2B")
-Map.addLayer(GEDI_L4A,{},"GEDI_L4A")
+Map.addLayer(GEDI_L2A,{},'GEDI_L2A',false)
+Map.addLayer(GEDI_L2B,{},"GEDI_L2B",false)
+Map.addLayer(GEDI_L4A,{},"GEDI_L4A",false)
 
 
 
-// function preserveId(image) {
-//   return image.set('uniqid', image.get('system:index'));
-// }
+// // function preserveId(image) {
+// //   return image.set('uniqid', image.get('system:index'));
+// // }
 
 
-// var col1 = ee.ImageCollection(manualImages).map(preserveId);
+// // var col1 = ee.ImageCollection(manualImages).map(preserveId);
     
-// var col2 = ee.ImageCollection('COPERNICUS/S2')
-//     .filterBounds(testArea)
-//     .filterDate('2018-01-01', '2018-01-05')
-//     .map(preserveId);
+// // var col2 = ee.ImageCollection('COPERNICUS/S2')
+// //     .filterBounds(testArea)
+// //     .filterDate('2018-01-01', '2018-01-05')
+// //     .map(preserveId);
 
-// var mergedCollection = col1.merge(col2);
+// // var mergedCollection = col1.merge(col2);
 
-// var s2Clouds = ee.ImageCollection('COPERNICUS/S2_CLOUD_PROBABILITY')
-//   .filterBounds(testArea)
-//   .map(preserveId);
+// // var s2Clouds = ee.ImageCollection('COPERNICUS/S2_CLOUD_PROBABILITY')
+// //   .filterBounds(testArea)
+// //   .map(preserveId);
 
-var masterGEDI = ee.Join.saveFirst('L2B').apply({
-  primary: GEDI_L4A,
-  secondary: GEDI_L2B,
-  condition:
-      ee.Filter.equals({leftField: 'delta_time', rightField: 'delta_time'})
-});
+// var masterGEDI = ee.ImageCollection(ee.Join.saveFirst('L2B').apply({ //The name is the new property linking to the image
+//   primary: GEDI_L4A,
+//   secondary: GEDI_L2B,
+//   condition:
+//       ee.Filter.equals({leftField: 'delta_time', rightField: 'delta_time'})
+// })
+// );
 
-print(masterGEDI);
+// print(masterGEDI);
 
 
-Map.addLayer(ee.Image(masterGEDI.first()),{},"firstGEDI")
+// // Map.addLayer(masterGEDI,{},"firstGEDI")
+
+
+/// Join GEDI L4A with
+
+var GEDI_L2A_Selection = ['delta_time','rh25','rh50', 'rh75','rh95','rh98','digital_elevation_model','digital_elevation_model_srtm']
+var GEDI_L2B_Selection = ['delta_time','cover','pai']
+
+var modL2A = GEDI_L2A.select(GEDI_L2A_Selection)
+var modL2B = GEDI_L2B.select(GEDI_L2B_Selection)
+
+
+var GEDI_L2Coll = ee.ImageCollection(
+  ee.Join.saveAll({matchesKey: 'join'}) // This creates a new field
+    // Add an 's1' property to each s2 image, with a list of s1 imagery from within 16 days
+    .apply({ 
+      primary: modL2A, 
+      secondary: modL2B, //GEDI_L2B
+      condition:
+        ee.Filter.equals({leftField: 'system:index', rightField: 'system:index'}) // Change from delta_time to system index
+    })
+  )
+  // Add the s1 band (a mosaica from the pixels closest to the s2 image)
+  
+// GEDI_L2Coll = GEDI_L2Coll 
+  .map(function (modL2A) {
+    var modL2B = ee.ImageCollection.fromImages(
+        ee.List(modL2A.get('join'))
+      )
+      .map(function (modL2B) {
+        var quality = ee.Image(
+            modL2B.date()
+              .difference(modL2A.date(), 'day')
+              .abs()
+              .multiply(-1)
+          )
+          .rename('quality') // -(number of days from the s2 image)
+        return modL2B
+          .addBands(quality)
+          .float()
+          // .updateMask(GEDI_L4A.select('cover').mask()) //GEDI_L2B_Attribution.reduce('sum').gte(1))//
+      })
+      .qualityMosaic('quality')
+      // .select(['cover','pai','quality'])
+      // .select(['rh25','rh50', 'rh75','rh95','rh98'])
+    return modL2A.addBands(modL2B)
+      // .updateMask(GEDI_L4A.select('sensitivity').gte(0.98))
+      // .updateMask(GEDI_L2B.select('solar_elevation').lt(0))
+  })
+  
+Map.addLayer(GEDI_L2Coll,{},"GEDI_L2Coll")
+print(GEDI_L2Coll,"GEDI_L2Coll")
+// print(GEDI_L4A,'GEDI_L4A')
+
+
+var gediMaster = ee.ImageCollection(
+  ee.Join.saveAll({matchesKey: 'join02'})
+    // Add an 's1' property to each s2 image, with a list of s1 imagery from within 16 days
+    .apply({ 
+      primary: GEDI_L4A, 
+      secondary: GEDI_L2Coll, //GEDI_L2B
+      condition:
+        ee.Filter.equals({leftField: 'system:index', rightField: 'system:index'})
+    })
+  )
+  // Add the s1 band (a mosaica from the pixels closest to the s2 image)
+// print(gediMaster,"gediMaster")  
+gediMaster = gediMaster 
+  .map(function (GEDI_L4A) {
+    var GEDI_L2Coll_img = ee.ImageCollection.fromImages(
+        ee.List(GEDI_L4A.get('join02'))
+      )
+      .map(function (GEDI_L2Coll_img) {
+        var quality = ee.Image(
+            GEDI_L2Coll_img.date()
+              .difference(GEDI_L4A.date(), 'day')
+              .abs()
+              .multiply(-1)
+          )
+          .rename('quality') // -(number of days from the s2 image)
+        return GEDI_L2Coll_img
+          .addBands(quality)
+          .float()
+          // // .updateMask(GEDI_L4A.select('cover').mask()) //GEDI_L2B_Attribution.reduce('sum').gte(1))//
+      })
+      // .qualityMosaic('quality')
+      .first()
+      // .select(['cover','pai','quality'])
+      // .select(['rh25','rh50', 'rh75','rh95','rh98'])
+    return GEDI_L4A.addBands(GEDI_L2Coll_img)
+      // .updateMask(GEDI_L4A.select('sensitivity').gte(0.98))
+      // .updateMask(GEDI_L2B.select('solar_elevation').lt(0))
+  })
+print(gediMaster.first(),"gediMaster")
+Map.addLayer(gediMaster,{},"gediMaster FINAL")
+
   
 
 // var ExportBands10 = [
