@@ -215,11 +215,10 @@ gediMaster = gediMaster
 print(gediMaster,"gediMaster")
 Map.addLayer(gediMaster,{},"gediMaster FINAL")
 
-var finalGedi_v2 = gediMaster
-// var finalGedi_v2 = gediMaster.map(qualityMaskXX)
-// finalGedi_v2 = finalGedi_v2.map(solarElevMask)
-// finalGedi_v2 = finalGedi_v2.map(sensitivityMask)
-// finalGedi_v2 = finalGedi_v2.map(beamFilter)
+var finalGedi_v2 = gediMaster.map(qualityMaskXX)
+finalGedi_v2 = finalGedi_v2.map(solarElevMask)
+finalGedi_v2 = finalGedi_v2.map(sensitivityMask)
+finalGedi_v2 = finalGedi_v2.map(beamFilter)
 
 Map.addLayer(finalGedi_v2,vizzy,"finalGedi_v2 FINAL")
 
