@@ -1117,7 +1117,7 @@ var composites = gediMasterLandsatKenobi.addBands(optical,null,true)
 //   .addBands(texture02,null,true).addBands(texture03,null,true)
 //   // .select(ExportBandsFINAL).int16()//.select(ExportBands10)
 //   .select(textureOnly)
-  .int16()
+  // .int16()
 
 Map.addLayer(composites,{},"composites")
 
