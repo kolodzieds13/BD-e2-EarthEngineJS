@@ -20,11 +20,11 @@ var testAOI =
 //
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-var getImagesLib = require('users/aaronkamoske/GTAC-Modules:getImagesLib.js')
+var getImagesLib = require('users/Kolodzieds13/BD-e2:getImages_ArgusGeo')
 
 
-var conusTransform = {'crs':'PROJCS["Albers_Conical_Equal_Area",GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],TOWGS84[0,0,0,0,0,0,0],AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.0174532925199433,AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4326"]],PROJECTION["Albers_Conic_Equal_Area"],PARAMETER["latitude_of_center",23],PARAMETER["longitude_of_center",-96],PARAMETER["standard_parallel_1",29.5],PARAMETER["standard_parallel_2",45.5],PARAMETER["false_easting",0],PARAMETER["false_northing",0],UNIT["meters",1],AXIS["Easting",EAST],AXIS["Northing",NORTH]]',
-                      'transform': [30,0,-2361915.0,0,-30,3177735.0]};
+// var conusTransform = {'crs':'PROJCS["Albers_Conical_Equal_Area",GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],TOWGS84[0,0,0,0,0,0,0],AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.0174532925199433,AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4326"]],PROJECTION["Albers_Conic_Equal_Area"],PARAMETER["latitude_of_center",23],PARAMETER["longitude_of_center",-96],PARAMETER["standard_parallel_1",29.5],PARAMETER["standard_parallel_2",45.5],PARAMETER["false_easting",0],PARAMETER["false_northing",0],UNIT["meters",1],AXIS["Easting",EAST],AXIS["Northing",NORTH]]',
+//                       'transform': [30,0,-2361915.0,0,-30,3177735.0]};
                       
 
 
@@ -475,8 +475,8 @@ var qualityMask100 = function(im) {
 
 var reprojectIMG = function(im){
   return im.reproject({
-    crs: 'EPSG:32610',
-    crsTransform: conusTransform})
+    crs: getImagesLib.common_projections.NLCD_CONUS.crs,
+    crsTransform: getImagesLib.common_projections.NLCD_CONUS.transform})
 }
 
 var getYear = (function(im){
@@ -919,7 +919,7 @@ args.exportPathRoot = 'users/davidkolodziejski/GEDI_Samples/EmeraldEdge_CanopyCo
 // CRS- must be provided.  
 // Common crs codes: Web mercator is EPSG:4326, USGS Albers is EPSG:5070, 
 // WGS84 UTM N hemisphere is EPSG:326+ zone number (zone 12 N would be EPSG:32612) and S hemisphere is EPSG:327+ zone number
-args.crs = 'EPSG:32610';
+args.crs = getImagesLib.common_projections.NLCD_CONUS.crs;
 
 // Specify transform if scale is null and snapping to known grid is needed
 args.transform = getImagesLib.common_projections.NLCD_CONUS.transform
@@ -1067,7 +1067,7 @@ var reducers = ee.Reducer.mean().combine({
 var stats = geoDiffNDVIprepped.reduceRegion({
     reducer: reducers,
     geometry: Validation04,
-    crs: 'EPSG:32610',
+    crs: getImagesLib.common_projections.NLCD_CONUS.crs,
     crsTransform: getImagesLib.common_projections.NLCD_CONUS.transform,
     maxPixels: 1e10
 })
@@ -1131,7 +1131,7 @@ Map.addLayer(composites,{},"composites")
 var sampled_points2 = composites.sample({ //--> or should I use 'reduceRegions'? If that makes more sence, what would the code look like for  'reduceRegions'?
   region: testAOI,
   scale: 30,
-  projection: conusTransform['crs'],
+  projection: getImagesLib.common_projections.NLCD_CONUS.crs,
   geometries: true
 });
 
@@ -1144,7 +1144,7 @@ var featColExport = sampled_points2.map(function (feature) {
   var coordinates = feature.geometry()
                           // Transform it to the desired EPSG code. Here WGS 84
                           // .transform('epsg:4326')
-                          .transform(conusTransform['transform'])// <= Come Back
+                          .transform(getImagesLib.common_projections.NLCD_CONUS.crs)// <= Come Back
                           // Get coordinates as a list
                           .coordinates();
   // Get both entries of coordinates and set them as new properties
