@@ -203,7 +203,7 @@ var gediMaster = ee.ImageCollection(
       primary: GEDI_L4A, 
       secondary: GEDI_L2Coll, //GEDI_L2B
       condition:
-        ee.Filter.equals({leftField: 'system:index', rightField: 'system:index'})
+        ee.Filter.equals({leftField: 'system:index', rightField: 'system:index'}) //IMPORTANT : Maybe shot_number instead?
     })
   )
   // Add the s1 band (a mosaica from the pixels closest to the s2 image)
