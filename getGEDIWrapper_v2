@@ -1,7 +1,6 @@
 /**** Start of imports. If edited, may not auto-convert in the playground. ****/
 var testAOI = 
     /* color: #d63000 */
-    /* shown: false */
     /* displayProperties: [
       {
         "type": "rectangle"
@@ -85,7 +84,7 @@ var addDateGEDI = function(im){
   // var month = doy.get('month').toString()
   // var day = doy.get('day').toString()
   // var imgDate = Year+month+day
-  var doyBand = ee.Image.constant(ee.Number.parse(doy)+1).rename('gediDate').toInt()
+  var doyBand = ee.Image.constant(ee.Number.parse(doy)).add(ee.Image.constant(1)).rename('gediDate').toInt()
   // doyBand = doyBand.updateMask(image.select('B8').mask())
 
   return im.addBands(doyBand);
@@ -146,8 +145,8 @@ var addDateGEDI = function(im){
 /// Join GEDI L4A with
 
 var GEDI_L2A_Selection = ['delta_time','rh25','rh50', 'rh75','rh95','rh98','digital_elevation_model','digital_elevation_model_srtm']
-var GEDI_L2B_Selection = ['delta_time','cover','pai','shot_number']
-var GEDI_L4A_Selection = ['delta_time','agbd','shot_number','l4_quality_flag','l2_quality_flag','degrade_flag','solar_elevation','beam','sensitivity']
+var GEDI_L2B_Selection = ['delta_time','cover','pai']
+var GEDI_L4A_Selection = ['delta_time','agbd','l4_quality_flag','l2_quality_flag','degrade_flag','solar_elevation','beam','sensitivity']
 
 var modL2A = GEDI_L2A.select(GEDI_L2A_Selection)
 var modL2B = GEDI_L2B.select(GEDI_L2B_Selection)
@@ -362,7 +361,7 @@ var reflectanceBands = [
   "nir",
   "swir1",
   "swir2",
-  // "NDVI",
+  "NDVI",
   // "NBR",
   // "NDMI",
   // "EVI",
