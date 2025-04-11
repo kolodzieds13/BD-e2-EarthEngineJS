@@ -1155,20 +1155,20 @@ Map.addLayer(composites,{},"composites")
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
-//                FAB DEM
+//                Add SRTM Elevation
 //
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-var srtmPrj = ee.Image("USGS/SRTMGL1_003").projection().getInfo()
+// var srtmPrj = ee.Image("USGS/SRTMGL1_003").projection().getInfo()
 
-var srtmCRS = srtmPrj.crs
-var srtmTransform = srtmPrj.transform
+// var srtmCRS = srtmPrj.crs
+// var srtmTransform = srtmPrj.transform
 
-print(srtmTransform,"strm transform")
+// print(srtmTransform,"strm transform")
 
 // grab FAB DEM Data
 var srtm = ee.Image("USGS/SRTMGL1_003")
-  .setDefaultProjection(srtmCRS,srtmTransform,null)
+  // .setDefaultProjection(srtmCRS,srtmTransform,null)
   // .setDefaultProjection('EPSG:4326',null,30)
   .resample("bicubic")
   .reproject({
