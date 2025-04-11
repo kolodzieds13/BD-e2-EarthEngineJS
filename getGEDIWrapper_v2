@@ -79,6 +79,19 @@ var beamFilter = function(im){
 }
 
 
+var addDateGEDI = function(im){
+  var doy = im.date().format('YYYYMMdd');
+  // var Year = doy.get('year').toString()
+  // var month = doy.get('month').toString()
+  // var day = doy.get('day').toString()
+  // var imgDate = Year+month+day
+  var doyBand = ee.Image.constant(ee.Number.parse(doy)).rename('gediDate').toInt()
+  // doyBand = doyBand.updateMask(image.select('B8').mask())
+
+  return im.addBands(doyBand);
+};
+
+
 // var qualityMask = function(im) {
 //   return im.updateMask(im.select('l4_quality_flag').eq(1))
 //       .updateMask(im.select('degrade_flag').eq(0));
@@ -226,6 +239,7 @@ var finalGedi_v2 = gediMaster.map(qualityMaskXX)
 finalGedi_v2 = finalGedi_v2.map(solarElevMask)
 finalGedi_v2 = finalGedi_v2.map(sensitivityMask)
 finalGedi_v2 = finalGedi_v2.map(beamFilter)
+finalGedi_v2 = finalGedi_v2.map(addDateGEDI)
 
 Map.addLayer(finalGedi_v2,vizzy,"finalGedi_v2 FINAL")
 
@@ -491,11 +505,12 @@ var addDate = function(im){
   // var month = doy.get('month').toString()
   // var day = doy.get('day').toString()
   // var imgDate = Year+month+day
-  var doyBand = ee.Image.constant(ee.Number.parse(doy)).rename('lsDate')
+  var doyBand = ee.Image.constant(ee.Number.parse(doy)).rename('lsDate').toInt()
   // doyBand = doyBand.updateMask(image.select('B8').mask())
 
   return im.addBands(doyBand);
 };
+
 
 
 
