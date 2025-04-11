@@ -484,6 +484,21 @@ var getYear = (function(im){
   return im.set('year', ee.Number(date.get('year')))
 })
 
+
+var addDate = function(im){
+  var doy = im.date().format('YYYYMMdd');
+  // var Year = doy.get('year').toString()
+  // var month = doy.get('month').toString()
+  // var day = doy.get('day').toString()
+  // var imgDate = Year+month+day
+  var doyBand = ee.Image.constant(ee.Number.parse(doy)).rename('lsDate')
+  // doyBand = doyBand.updateMask(image.select('B8').mask())
+
+  return im.addBands(doyBand);
+};
+
+
+
 //   })
 
 // Define a max difference filter to compare timestamps.
@@ -966,7 +981,7 @@ var lsPrep = getImagesLib.getProcessedLandsatScenes(args)
 // print(lsPrep.first())
 // Map.addLayer(lsPrep.first(),{},'HSV Test')
 
-var lsPrep_wIndicies = lsPrep
+var lsPrep_wIndicies = lsPrep.map(addDate)
     // .filterBounds(Validation04)//.map(getImagesLib.simpleAddIndices).map(getImagesLib.getTasseledCap).map(getImagesLib.simpleAddTCAngles).map(getImagesLib.addSAVIandEVI)
     // .filterDate('2019-01-01', '2019-12-31')
     // .map(getImagesLib.reconcileInvalid)
