@@ -361,7 +361,7 @@ var addLSDate = function(im){
 
 // Define a max difference filter to compare timestamps.
 var maxDiffFilter = ee.Filter.maxDifference({
-  difference: 20 * 24 * 60 * 60 * 1000,
+  difference: 20 * 24 * 60 * 60 * 1000, // first value ('20') is the number of days
   leftField: 'system:time_start',
   rightField: 'system:time_start'
 });
