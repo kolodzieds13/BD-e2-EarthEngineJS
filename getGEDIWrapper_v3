@@ -662,18 +662,18 @@ var gediMasterLS = ee.ImageCollection( //gediMasterLandsatLCMS
   )
   // Add the s1 band (a mosaic from the pixels closest to the s2 image)
   .map(function (lsPrep_wIndicies) {
-    var gediMasterLCMS = ee.ImageCollection.fromImages(
+    var gediMasterLS00 = ee.ImageCollection.fromImages(
         ee.List(lsPrep_wIndicies.get('gedi'))
       )
-      .map(function (gediMasterLCMS) {
+      .map(function (gediMasterLS00) {
         var quality = ee.Image(
-            gediMasterLCMS.date()
+            gediMasterLS00.date()
               .difference(lsPrep_wIndicies.date(), 'day')
               .abs()
               .multiply(-1)
           )
           .rename('quality') // -(number of days from the s2 image)
-        return gediMasterLCMS
+        return gediMasterLS00
           .addBands(quality)
           .float()
           .updateMask(lsPrep_wIndicies.reduce('sum').gte(1))//.mask())
@@ -682,7 +682,7 @@ var gediMasterLS = ee.ImageCollection( //gediMasterLandsatLCMS
       // .select(['agbd', 'solar_elevation','sensitivity','cover','shot_number_within_beam','elev_lowestmode','digital_elevation_model_srtm',
       //     'Change_Raw_Probability_Slow_Loss','Change_Raw_Probability_Fast_Loss','Change_Raw_Probability_Gain', 
       //     'Land_Cover_Raw_Probability_Trees','lcms_Stable','lcms_SlowLoss','lcms_fastLoss','lcms_Gain'])
-    return lsPrep_wIndicies.addBands(gediMasterLS,null,true)
+    return lsPrep_wIndicies.addBands(gediMasterLS00)
       // .updateMask(gnnMask)
   })
 
@@ -730,7 +730,7 @@ if (applyNDVIFilter){
 //
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-if (addSTRMElevation){
+if (addElevation){
   print('Adding SRTM Elevation')
   // grab SRTM Data
   var srtm = ee.Image("USGS/SRTMGL1_003")
