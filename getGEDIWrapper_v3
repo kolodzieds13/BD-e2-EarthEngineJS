@@ -19,16 +19,102 @@ var testAOI =
 //
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-// var getImagesLib = require('users/Kolodzieds13/BD-e2:getImages_ArgusGeo')
 //Module imports
 var getImagesLib = require('users/aaronkamoske/GTAC-Modules:getImagesLib.js');
 
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//                GEDI Parameters
+//
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-// var conusTransform = {'crs':'PROJCS["Albers_Conical_Equal_Area",GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],TOWGS84[0,0,0,0,0,0,0],AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.0174532925199433,AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4326"]],PROJECTION["Albers_Conic_Equal_Area"],PARAMETER["latitude_of_center",23],PARAMETER["longitude_of_center",-96],PARAMETER["standard_parallel_1",29.5],PARAMETER["standard_parallel_2",45.5],PARAMETER["false_easting",0],PARAMETER["false_northing",0],UNIT["meters",1],AXIS["Easting",EAST],AXIS["Northing",NORTH]]',
-//                       'transform': [30,0,-2361915.0,0,-30,3177735.0]};
-                      
+// Select GEDI sensitivity 
+var sensitivityThres = 0.98
+// Select Beam Type: Options are 'cover','power', or 'all
+var beamType = 'all'
+// Select solor elevation threshold. Filter applies less than condition.
+// i.e. 0 indicated solar-elevation less than 0: indicated night time observation
+var solarElevThres = 0
+
+// Apply NDVI/Canopy Cover Filter
+var applyNDVIFilter = true
+// Add SRTM Elevation Data
+var addElevation = true
+// Add Texture Elevation Data
+var addTexture = false
+// If 'addTexture' what band?
+var textureBand = 'EVI'
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//                Image Parameters Data
+//
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
+var imgCRS = 'EPSG:5070'
+var imgScale = 30
+var imgTransform = [30,0,-2361915,0,-30,3177735]
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//                Export Parameters
+//
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+var outName
+var outDir
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//                Functions
+//
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+//Dropping Degraded Observations
+var qualityMaskXX = function(im) {
+  var img = im.updateMask(im.select('l4_quality_flag').eq(1))
+  img = img.updateMask(img.select('l2_quality_flag').eq(1))
+  img = img.updateMask(img.select('degrade_flag').eq(0));
+  return img
+};
+//Time of Day Observations
+var solarElevMask = function(im){
+  return im.updateMask(im.select('solar_elevation').lt(solarElevThres))
+}
+//Sensitivity Threshold
+var sensitivityMask = function(im){
+  return im.updateMask(im.select('sensitivity').gte(sensitivityThres))
+}
+//Beam Type
+var beamFilter = function(im){
+  if (beamType == 'power'){
+    return im.updateMask(im.select('beam').gt(3))
+  }
+  if (beamType == 'coverage'){
+    return im.updateMask(im.select('beam').lte(3))
+  }
+  if (beamType == 'all'){
+    return im
+  }
+}
+//GEDI Date YYYYMMdd
+var addDateGEDI = function(im){
+  var doy = im.date().format('YYYYMMdd');
+  var doyBand = ee.Image.constant(ee.Number.parse(doy)).add(ee.Image.constant(1)).rename('gediDate').toInt()
+  return im.addBands(doyBand);
+};
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//                Prepare GEDI Data
+//
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// Load Collections
 
 var GEDI_L2A = ee.ImageCollection('LARSE/GEDI/GEDI02_A_002_MONTHLY')
   .filterBounds(testAOI)
@@ -41,118 +127,19 @@ print('GEDI_L2A',GEDI_L2A.first())
 print('GEDI_L2B',GEDI_L2B.first())
 print('GEDI_L4A',GEDI_L4A.first())
 
-Map.addLayer(GEDI_L2A,{},'GEDI_L2A',false)
-Map.addLayer(GEDI_L2B,{},"GEDI_L2B",false)
-Map.addLayer(GEDI_L4A,{},"GEDI_L4A",false)
-
-// // // Functions for Dropping Degraded Observations // // //
-var qualityMaskXX = function(im) {
-  var img = im.updateMask(im.select('l4_quality_flag').eq(1))
-  img = img.updateMask(img.select('l2_quality_flag').eq(1))
-  img = img.updateMask(img.select('degrade_flag').eq(0));
-  return img
-};
-
-// Probably should be All,night,day
-var solarElevThres = 0
-var solarElevMask = function(im){
-  return im.updateMask(im.select('solar_elevation').lt(solarElevThres))
-}
-
-
-var sensitivityThres = 0.98
-
-var sensitivityMask = function(im){
-  return im.updateMask(im.select('sensitivity').gte(sensitivityThres))
-}
-
-var beamType = 'all'
-var beamFilter = function(im){
-  if (beamType == 'power'){
-    return im.updateMask(im.select('beam').gt(3))
-  }
-  if (beamType == 'coverage'){
-    return im.updateMask(im.select('beam').lte(3))
-  }
-  if (beamType == 'all'){
-    return im
-  }
-}
-
-
-var addDateGEDI = function(im){
-  var doy = im.date().format('YYYYMMdd');
-  // var Year = doy.get('year').toString()
-  // var month = doy.get('month').toString()
-  // var day = doy.get('day').toString()
-  // var imgDate = Year+month+day
-  var doyBand = ee.Image.constant(ee.Number.parse(doy)).add(ee.Image.constant(1)).rename('gediDate').toInt()
-  // doyBand = doyBand.updateMask(image.select('B8').mask())
-
-  return im.addBands(doyBand);
-};
-
-
-// var qualityMask = function(im) {
-//   return im.updateMask(im.select('l4_quality_flag').eq(1))
-//       .updateMask(im.select('degrade_flag').eq(0));
-// };
-
-// var qualityMask99 = function(im) {
-//   return im.updateMask(im.select('l2b_quality_flag').eq(1))
-//       .updateMask(im.select('degrade_flag').eq(0));
-// };
-
-// var qualityMask100 = function(im) {
-//   return im.updateMask(im.select('quality_flag').eq(1))
-//       .updateMask(im.select('degrade_flag').eq(0));
-// };
-
-
-
-
-
-// // function preserveId(image) {
-// //   return image.set('uniqid', image.get('system:index'));
-// // }
-
-
-// // var col1 = ee.ImageCollection(manualImages).map(preserveId);
-    
-// // var col2 = ee.ImageCollection('COPERNICUS/S2')
-// //     .filterBounds(testArea)
-// //     .filterDate('2018-01-01', '2018-01-05')
-// //     .map(preserveId);
-
-// // var mergedCollection = col1.merge(col2);
-
-// // var s2Clouds = ee.ImageCollection('COPERNICUS/S2_CLOUD_PROBABILITY')
-// //   .filterBounds(testArea)
-// //   .map(preserveId);
-
-// var masterGEDI = ee.ImageCollection(ee.Join.saveFirst('L2B').apply({ //The name is the new property linking to the image
-//   primary: GEDI_L4A,
-//   secondary: GEDI_L2B,
-//   condition:
-//       ee.Filter.equals({leftField: 'delta_time', rightField: 'delta_time'})
-// })
-// );
-
-// print(masterGEDI);
-
-
-// // Map.addLayer(masterGEDI,{},"firstGEDI")
-
-
-/// Join GEDI L4A with
+// Indicate Desired Bands
 
 var GEDI_L2A_Selection = ['delta_time','rh25','rh50', 'rh75','rh95','rh98','digital_elevation_model','digital_elevation_model_srtm']
 var GEDI_L2B_Selection = ['delta_time','cover','pai']
 var GEDI_L4A_Selection = ['delta_time','agbd','l4_quality_flag','l2_quality_flag','degrade_flag','solar_elevation','beam','sensitivity']
 
-var modL2A = GEDI_L2A.select(GEDI_L2A_Selection)
-var modL2B = GEDI_L2B.select(GEDI_L2B_Selection)
-GEDI_L4A = GEDI_L4A.select(GEDI_L4A_Selection) // important! 
+var modL2A = GEDI_L2A.select(GEDI_L2A_Selection).map(preserveId)
+var modL2B = GEDI_L2B.select(GEDI_L2B_Selection).map(preserveId)
+GEDI_L4A = GEDI_L4A.select(GEDI_L4A_Selection).map(preserveId) // important! 
+
+// https://gis.stackexchange.com/questions/376961/is-there-a-way-to-merge-imagecollections-in-earth-engine-without-the-systemind
+
+// Merge Collections
 
 var GEDI_L2Coll = ee.ImageCollection(
   ee.Join.saveAll({matchesKey: 'join'}) // This creates a new field in properties
@@ -164,8 +151,7 @@ var GEDI_L2Coll = ee.ImageCollection(
         ee.Filter.equals({leftField: 'system:index', rightField: 'system:index'}) // Change from delta_time to system index
     })
   )
-  // Add the s1 band (a mosaica from the pixels closest to the s2 image)
-  
+
 // GEDI_L2Coll = GEDI_L2Coll 
   .map(function (modL2A) {
     var modL2B = ee.ImageCollection.fromImages(
@@ -178,28 +164,23 @@ var GEDI_L2Coll = ee.ImageCollection(
               .abs()
               .multiply(-1)
           )
-          .rename('quality') // -(number of days from the s2 image)
+          .rename('quality') // -(number of days from the image)
         return modL2B
           .addBands(quality)
           .float()
-          // .updateMask(GEDI_L4A.select('cover').mask()) //GEDI_L2B_Attribution.reduce('sum').gte(1))//
       })
       .qualityMosaic('quality')
-      // .select(['cover','pai','quality'])
-      // .select(['rh25','rh50', 'rh75','rh95','rh98'])
-    return modL2A.addBands(modL2B)
-      // .updateMask(GEDI_L4A.select('sensitivity').gte(0.98))
-      // .updateMask(GEDI_L2B.select('solar_elevation').lt(0))
-  })
-  
-Map.addLayer(GEDI_L2Coll,{},"GEDI_L2Coll")
-print(GEDI_L2Coll,"GEDI_L2Coll")
-// print(GEDI_L4A,'GEDI_L4A')
 
+    return modL2A.addBands(modL2B)
+  })
+
+// // Display Results  
+// Map.addLayer(GEDI_L2Coll,{},"GEDI_L2Coll")
+// print(GEDI_L2Coll,"GEDI_L2Coll")
 
 var gediMaster = ee.ImageCollection(
   ee.Join.saveAll({matchesKey: 'join02'})
-    // Add an 's1' property to each s2 image, with a list of s1 imagery from within 16 days
+    // Add an 'GEDI L2' property to each GEDI l4A image, with a list of s1 imagery from within 16 days
     .apply({ 
       primary: GEDI_L4A, 
       secondary: GEDI_L2Coll, //GEDI_L2B
@@ -230,8 +211,7 @@ gediMaster = gediMaster
       .qualityMosaic('quality') // Review Later do i need quality mosaic()
       // .first()
     return GEDI_L4A.addBands(GEDI_L2Coll_img)
-      // .updateMask(GEDI_L4A.select('sensitivity').gte(0.98))
-      // .updateMask(GEDI_L2B.select('solar_elevation').lt(0))
+
   })
 print(gediMaster,"gediMaster")
 Map.addLayer(gediMaster,{},"gediMaster FINAL")
@@ -273,23 +253,6 @@ var ExportBands10 = [
   "tcDistGW",
   "tcDistBW"]
   
-var lcmsBands = [
-  'Change_Raw_Probability_Slow_Loss',
-  'Change_Raw_Probability_Fast_Loss',
-  'Change_Raw_Probability_Gain', 
-  'Land_Cover_Raw_Probability_Trees',
-  'lcms_Stable',
-  'lcms_SlowLoss',
-  'lcms_fastLoss',
-  'lcms_Gain'
-  ]
-  
-var lcmsProb = [
-  'Change_Raw_Probability_Slow_Loss',
-  'Change_Raw_Probability_Fast_Loss',
-  'Change_Raw_Probability_Gain', 
-  'Land_Cover_Raw_Probability_Trees'
-  ]
   
   
 var texture10000 = ["tcDistBW_asm",
@@ -379,51 +342,6 @@ var reflectanceBands = [
   // "tcDistBW"
   ]
   
-var ExportBandsFINAL = [
-  // "agbdINT",
-  'agbd',
-  'shot_number_within_beam',
-  'blue',
-  'green',
-  'red',
-  'nir',
-  'swir1',
-  'swir2',
-  'NDVI',
-  'NBR',
-  'NDMI',
-  'EVI',
-  'SAVI',
-  'brightness',
-  'greenness',
-  'wetness',
-  'tcAngleBG',
-  'tcAngleGW',
-  'tcAngleBW',
-  'tcDistBG',
-  'tcDistGW',
-  'tcDistBW',
-  'tcDistBW_asm',
-  'tcDistBW_contrast',
-  'tcDistBW_corr',
-  'tcDistBW_var',
-  'tcDistBW_idm',
-  'tcDistBW_savg',
-  'tcDistBW_svar',
-  'tcDistBW_sent',
-  'tcDistBW_ent',
-  'tcDistBW_dvar',
-  'tcDistBW_dent',
-  'tcDistBW_imcorr1',
-  'tcDistBW_imcorr2',
-  'Change_Raw_Probability_Slow_Loss',
-  'Change_Raw_Probability_Fast_Loss',
-  'Change_Raw_Probability_Gain', 
-  'Land_Cover_Raw_Probability_Trees',
-  'lcms_Stable',
-  'lcms_SlowLoss',
-  'lcms_fastLoss',
-  'lcms_Gain']
   
 var textureOnly = [
   'agbd',
@@ -491,8 +409,8 @@ var qualityMask100 = function(im) {
 
 var reprojectIMG = function(im){
   return im.reproject({
-    crs: getImagesLib.common_projections.NLCD_CONUS.crs,
-    crsTransform: getImagesLib.common_projections.NLCD_CONUS.transform})
+    crs: imgCRS,
+    crsTransform: imgTransform})
 }
 
 var getYear = (function(im){
@@ -951,13 +869,13 @@ args.exportPathRoot = 'users/davidkolodziejski/GEDI_Samples/EmeraldEdge_CanopyCo
 // CRS- must be provided.  
 // Common crs codes: Web mercator is EPSG:4326, USGS Albers is EPSG:5070, 
 // WGS84 UTM N hemisphere is EPSG:326+ zone number (zone 12 N would be EPSG:32612) and S hemisphere is EPSG:327+ zone number
-args.crs = getImagesLib.common_projections.NLCD_CONUS.crs;
+args.crs = imgCRS;
 
 // Specify transform if scale is null and snapping to known grid is needed
-args.transform = getImagesLib.common_projections.NLCD_CONUS.transform
+args.transform = imgTransform
 
 // Specify scale if transform is null
-args.scale = null;
+args.scale = imgScale;
 ///////////////////////////////////////////////////////////////////////
 // // End user parameters
 // ///////////////////////////////////////////////////////////////////////
@@ -1101,8 +1019,8 @@ var reducers = ee.Reducer.mean().combine({
 var stats = geoDiffNDVIprepped.reduceRegion({
     reducer: reducers,
     geometry: Validation04,
-    crs: getImagesLib.common_projections.NLCD_CONUS.crs,
-    crsTransform: getImagesLib.common_projections.NLCD_CONUS.transform,
+    crs: imgCRS,
+    crsTransform: imgTransform,
     maxPixels: 1e10
 })
 
@@ -1174,8 +1092,9 @@ var srtm = ee.Image("USGS/SRTMGL1_003")
   // .setDefaultProjection('EPSG:4326',null,30)
   .resample("bicubic")
   .reproject({
-    crs: getImagesLib.common_projections.NLCD_CONUS.crs,
-    crsTransform: getImagesLib.common_projections.NLCD_CONUS.transform
+    crs: imgCRS,
+    crsTransform: imgTransform,
+    scale: imgScale
         //scale: 30 //90
   })
   .select(['elevation'],['demSRTM'])
@@ -1252,8 +1171,8 @@ composites = composites.addBands(newTerrainVariable)
 //Extracting values
 var sampled_points2 = composites.sample({ //--> or should I use 'reduceRegions'? If that makes more sence, what would the code look like for  'reduceRegions'?
   region: testAOI,
-  scale: 30,
-  projection: getImagesLib.common_projections.NLCD_CONUS.crs,
+  scale: imgScale,
+  projection: imgCRS,
   geometries: true
 });
 
@@ -1266,7 +1185,7 @@ var featColExport = sampled_points2.map(function (feature) {
   var coordinates = feature.geometry()
                           // Transform it to the desired EPSG code. Here WGS 84
                           // .transform('epsg:4326')
-                          .transform(getImagesLib.common_projections.NLCD_CONUS.crs)// <= Come Back
+                          .transform(imgCRS)// <= Come Back
                           // Get coordinates as a list
                           .coordinates();
   // Get both entries of coordinates and set them as new properties
