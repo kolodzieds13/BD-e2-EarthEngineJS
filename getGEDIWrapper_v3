@@ -1,6 +1,7 @@
 /**** Start of imports. If edited, may not auto-convert in the playground. ****/
 var testAOI = 
     /* color: #d63000 */
+    /* shown: false */
     /* displayProperties: [
       {
         "type": "rectangle"
@@ -809,8 +810,8 @@ Map.addLayer(gediMasterLS,{},"with Landsat")
 //Extracting values
 var sampled_points2 = gediMasterLS.sample({ //--> or should I use 'reduceRegions'? If that makes more sence, what would the code look like for  'reduceRegions'?
   region: AOI,
-  scale: imgScale,
-  crsTransform: imgTransform,
+  scale: 30,//imgScale,
+  // crsTransform: imgTransform,
   projection: imgCRS,
   geometries: true
 });
