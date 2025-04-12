@@ -226,8 +226,7 @@ gediMaster = gediMaster
     return GEDI_L4A.addBands(GEDI_L2Coll_img)
 
   })
-print(gediMaster,"gediMaster")
-Map.addLayer(gediMaster,{},"gediMaster FINAL")
+
 
 // Get Final GEDI Product
 
@@ -236,6 +235,10 @@ finalGedi_v2 = finalGedi_v2.map(solarElevMask)
 finalGedi_v2 = finalGedi_v2.map(sensitivityMask)
 finalGedi_v2 = finalGedi_v2.map(beamFilter)
 finalGedi_v2 = finalGedi_v2.map(addDateGEDI)
+
+print(finalGedi_v2,"gediMaster")
+Map.addLayer(finalGedi_v2,{},"gediMaster FINAL")
+
 
 // Map.addLayer(finalGedi_v2,vizzy,"finalGedi_v2 FINAL")
 
@@ -789,9 +792,11 @@ if (addElevation){
 //
 /////////////////////////////////////////////////////////////////////////
 
-var optical = gediMasterLandsatKenobi.select(reflectanceBands).multiply(10000)
+var optical = gediMasterLS.select(reflectanceBands).multiply(10000)
 gediMasterLS = gediMasterLS.addBands(optical,null,true)
 
+print(gediMasterLS,"gediMaster with Landsat")
+Map.addLayer(gediMasterLS,{},"with Landsat")
 
 
 //////////////////////////////////////////////////////////////////////
@@ -805,6 +810,7 @@ gediMasterLS = gediMasterLS.addBands(optical,null,true)
 var sampled_points2 = gediMasterLS.sample({ //--> or should I use 'reduceRegions'? If that makes more sence, what would the code look like for  'reduceRegions'?
   region: AOI,
   scale: imgScale,
+  crsTransform: imgTransform,
   projection: imgCRS,
   geometries: true
 });
