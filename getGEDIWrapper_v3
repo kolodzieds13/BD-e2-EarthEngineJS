@@ -68,9 +68,10 @@ var imgTransform = [30,0,-2361915,0,-30,3177735]
 //
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-
-var outName
-var outDir
+// Name of CSV file
+var outName = 'GEDI_Landsat_Fusion'
+// Name of Output Directory
+var outDir = ""
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -83,9 +84,9 @@ var outDir
 var qualityMaskXX = function(im) {
   var img = im.updateMask(im.select('l4_quality_flag').eq(1))
   img = img.updateMask(img.select('l2_quality_flag').eq(1))
-  img = img.updateMask(img.select('degrade_flag').eq(0));
+  img = img.updateMask(img.select('degrade_flag').eq(0))
   return img
-};
+}
 //Time of Day Observations
 var solarElevMask = function(im){
   return im.updateMask(im.select('solar_elevation').lt(solarElevThres))
@@ -360,7 +361,7 @@ var addLSDate = function(im){
 
 // Define a max difference filter to compare timestamps.
 var maxDiffFilter = ee.Filter.maxDifference({
-  difference: 24 * 24 * 60 * 60 * 1000,
+  difference: 20 * 24 * 60 * 60 * 1000,
   leftField: 'system:time_start',
   rightField: 'system:time_start'
 });
@@ -626,12 +627,14 @@ var lsPrep = getImagesLib.getProcessedLandsatScenes(args)
 
 var lsPrep_wIndicies = lsPrep
         .map(addLSDate)
-        .select('blue','green','red','nir','swir1','swir2','NDVI','lsDate')
+        .map(getImagesLib.addSAVIandEVI)
+        .map(getImagesLib.addTCAngles)
+        // .select('blue','green','red','nir','swir1','swir2','NDVI','lsDate')
     // .filterBounds(Validation04)//.map(getImagesLib.simpleAddIndices).map(getImagesLib.getTasseledCap).map(getImagesLib.simpleAddTCAngles).map(getImagesLib.addSAVIandEVI)
     // .filterDate('2019-01-01', '2019-12-31')
     // .map(getImagesLib.reconcileInvalid)
-    .map(getImagesLib.addSAVIandEVI)
-    .map(getImagesLib.addTCAngles)
+    // .map(getImagesLib.addSAVIandEVI)
+    // .map(getImagesLib.addTCAngles)
     // .map(getImagesLib.addHSV)
     // .map(getImagesLib.addNDPI)
     // .map(getImagesLib.addTextureGLCM)
@@ -639,6 +642,8 @@ var lsPrep_wIndicies = lsPrep
 
 
 
+
+//https://gis.stackexchange.com/questions/345962/create-paired-images-by-near-date
 
 var gediMasterLandsatLCMS = ee.ImageCollection(
   ee.Join.saveAll({matchesKey: 'gedi'})
