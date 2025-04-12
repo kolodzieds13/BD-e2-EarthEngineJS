@@ -54,7 +54,7 @@ var textureBand = 'EVI'
 var startJulian = 1
 var endJulian = 365
 var startYear = 2019
-var endYear= 2023
+var endYear= 2019
 
 var AOI = testAOI
 
