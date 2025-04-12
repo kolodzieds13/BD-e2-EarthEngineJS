@@ -597,41 +597,6 @@ args.transform = imgTransform
 
 // Specify scale if transform is null
 args.scale = imgScale;
-///////////////////////////////////////////////////////////////////////
-// // End user parameters
-// ///////////////////////////////////////////////////////////////////////
-// print('Provided parameters are:',args);
-// ///////////////////////////////////////////////////////////////////////
-// ///////////////////////////////////////////////////////////////////////
-// //Start function calls
-// ////////////////////////////////////////////////////////////////////////////////
-// //Call on master wrapper function to get Landat scenes and composites
-// var landsat = getImagesLib.getLandsatWrapper(args);
-// print('Final output:',landsat);
-// //Separate into scenes and composites for subsequent analysis
-// var processedScenes = landsat.processedScenes;
-// var processedComposites = landsat.processedComposites;
-
-// ////////////////////////////////////////////////////////////////////////////////
-// // Load the study region, with a blue outline.
-// // Create an empty image into which to paint the features, cast to byte.
-// // Paint all the polygon edges with the same number and width, display.
-// var empty = ee.Image().byte();
-// var outline = empty.paint({
-//   featureCollection: args.studyArea,
-//   color: 1,
-//   width: 3
-// });
-// Map.addLayer(outline, {palette: '0000FF'}, "Study Area", false);
-// // Map.centerObject(studyArea, 6);
-
-// Map.setOptions('hybrid')
-// ////////////////////////////////////////////////////////////////////////////////
-// ////////////////////////////////////////////////////////////////////////////////
-// ////////////////////////////////////////////////////////////////////////////////
-
-
-///// Values are still in Float
 
 var lsPrep = getImagesLib.getProcessedLandsatScenes(args)
 
@@ -722,7 +687,7 @@ if (applyNDVIFilter){
   var geoDiffSTD = ee.Number(stats.get('geoDiff_stdDev'))
   
   var geoDiffFilter = geoDiffNDVIprepped.divide(geoDiffSTD)
-  var geoDiffFilterMask = geoDiffFilter.lt(1)
+  var geoDiffFilterMask = geoDiffFilter.lt(1) //i.e. less than 1 StDev
   
   gediMasterLS = gediMasterLS.updateMask(geoDiffFilterMask)
 }
