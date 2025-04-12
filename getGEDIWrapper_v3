@@ -51,8 +51,8 @@ var textureBand = 'EVI'
 //
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-var startDay = 1
-var endDay = 365
+var startJulian = 1
+var endJulian = 365
 var startYear = 2019
 var endYear= 2023
 
@@ -125,11 +125,16 @@ var addDateGEDI = function(im){
 
 var GEDI_L2A = ee.ImageCollection('LARSE/GEDI/GEDI02_A_002_MONTHLY')
   .filterBounds(testAOI)
-  .filter(ee.Filter)
+  .filter(ee.Filter.calendarRange(startYear,endYear,'year'))
+  .filter(ee.Filter.calendarRange(startJulian,endJulian))
 var GEDI_L2B = ee.ImageCollection('LARSE/GEDI/GEDI02_B_002_MONTHLY')
   .filterBounds(testAOI)
+  .filter(ee.Filter.calendarRange(startYear,endYear,'year'))
+  .filter(ee.Filter.calendarRange(startJulian,endJulian))
 var GEDI_L4A = ee.ImageCollection('LARSE/GEDI/GEDI04_A_002_MONTHLY')
   .filterBounds(testAOI)
+  .filter(ee.Filter.calendarRange(startYear,endYear,'year'))
+  .filter(ee.Filter.calendarRange(startJulian,endJulian))
 
 print('GEDI_L2A',GEDI_L2A.first())
 print('GEDI_L2B',GEDI_L2B.first())
@@ -141,9 +146,9 @@ var GEDI_L2A_Selection = ['delta_time','rh25','rh50', 'rh75','rh95','rh98','digi
 var GEDI_L2B_Selection = ['delta_time','cover','pai']
 var GEDI_L4A_Selection = ['delta_time','agbd','l4_quality_flag','l2_quality_flag','degrade_flag','solar_elevation','beam','sensitivity']
 
-var modL2A = GEDI_L2A.select(GEDI_L2A_Selection).map(preserveId)
-var modL2B = GEDI_L2B.select(GEDI_L2B_Selection).map(preserveId)
-GEDI_L4A = GEDI_L4A.select(GEDI_L4A_Selection).map(preserveId) // important! 
+var modL2A = GEDI_L2A.select(GEDI_L2A_Selection)
+var modL2B = GEDI_L2B.select(GEDI_L2B_Selection)
+GEDI_L4A = GEDI_L4A.select(GEDI_L4A_Selection)
 
 // https://gis.stackexchange.com/questions/376961/is-there-a-way-to-merge-imagecollections-in-earth-engine-without-the-systemind
 
@@ -409,15 +414,15 @@ var Validation04 = testAOI//Kenobi_AOI//AOI
 
 
 
-args.startJulian = 1;  //152
-args.endJulian = 365;    // 244
+args.startJulian = startJulian;  //152
+args.endJulian = endJulian;    // 244
 
 // Specify start and end years for all analyses
 // More than a 3 year span should be provided for time series methods to work 
 // well. If providing pre-computed stats for cloudScore and TDOM, this does not 
 // matter
-args.startYear = 2019; //2000
-args.endYear = 2019; //2022
+args.startYear = startYear; //2000
+args.endYear = endYear; //2022
 
 
 // var StartMonth = ee.Number(6);
@@ -566,16 +571,16 @@ args.correctIllumination = false;
 args.correctScale = 250;//Choose a scale to reduce on- 250 generally works well
 
 // Export params
-// Whether to export composites
-args.exportComposites = true;
+// // Whether to export composites
+// args.exportComposites = true;
 
-// Set up Names for the export
-args.outputName = 'GEDI_Kenobi_EE_wTransform_20cloudScore_round05';
+// // Set up Names for the export
+// args.outputName = 'GEDI_Kenobi_EE_wTransform_20cloudScore_round05';
 
-// Provide location composites will be exported to
-// This should be an asset folder, or more ideally, an asset imageCollection
-// args.exportPathRoot = 'users/Kolodzieds13/Kenobi_2021_2019_Medoid_TOA';
-args.exportPathRoot = 'users/davidkolodziejski/GEDI_Samples/EmeraldEdge_CanopyCover/yr'+StartYr.toString();
+// // Provide location composites will be exported to
+// // This should be an asset folder, or more ideally, an asset imageCollection
+// // args.exportPathRoot = 'users/Kolodzieds13/Kenobi_2021_2019_Medoid_TOA';
+// args.exportPathRoot = 'users/davidkolodziejski/GEDI_Samples/EmeraldEdge_CanopyCover/yr'+StartYr.toString();
 
 
 // CRS- must be provided.  
