@@ -682,7 +682,7 @@ var gediMasterLS = ee.ImageCollection( //gediMasterLandsatLCMS
       // .select(['agbd', 'solar_elevation','sensitivity','cover','shot_number_within_beam','elev_lowestmode','digital_elevation_model_srtm',
       //     'Change_Raw_Probability_Slow_Loss','Change_Raw_Probability_Fast_Loss','Change_Raw_Probability_Gain', 
       //     'Land_Cover_Raw_Probability_Trees','lcms_Stable','lcms_SlowLoss','lcms_fastLoss','lcms_Gain'])
-    return lsPrep_wIndicies.addBands(gediMasterLS)
+    return lsPrep_wIndicies.addBands(gediMasterLS,null,true)
       // .updateMask(gnnMask)
   })
 
@@ -731,6 +731,7 @@ if (applyNDVIFilter){
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 if (addSTRMElevation){
+  print('Adding SRTM Elevation')
   // grab SRTM Data
   var srtm = ee.Image("USGS/SRTMGL1_003")
     // .setDefaultProjection(srtmCRS,srtmTransform,null)
@@ -778,7 +779,7 @@ if (addSTRMElevation){
   
   gediMasterLS = gediMasterLS.addBands(newTerrainVariable)
 
-
+}
 
 
 
