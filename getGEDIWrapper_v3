@@ -74,7 +74,7 @@ var imgTransform = [30,0,-2361915,0,-30,3177735]
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Name of CSV file
-var outName = 'GEDI_Landsat_Fusion_v11'
+var outName = 'GEDI_Landsat_Fusion_v13'
 // Name of Output Directory
 var outDir = "BDe2/tables"
 
@@ -273,7 +273,7 @@ finalGedi_v2 = finalGedi_v2.map(sensitivityMask)
 finalGedi_v2 = finalGedi_v2.map(beamFilter)
 finalGedi_v2 = finalGedi_v2.map(addDateGEDI)
 finalGedi_v2 = finalGedi_v2.map(preserveId)
-finalGedi_v2 = finalGedi_v2.map(reprojectGEDI)
+// finalGedi_v2 = finalGedi_v2.map(reprojectGEDI)
 
 print(finalGedi_v2,"gediMaster")
 Map.addLayer(finalGedi_v2,{},"gediMaster FINAL")
@@ -552,6 +552,7 @@ print(bandDictionary['reflectanceAll']+'lsDate')
 
 print("Landsat Band Names",lsPrep_wIndicies.first().bandNames())
 
+print(lsPrep_wIndicies.first().projection)
 
 
 //https://gis.stackexchange.com/questions/345962/create-paired-images-by-near-date
