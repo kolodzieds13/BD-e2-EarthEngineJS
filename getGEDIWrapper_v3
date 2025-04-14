@@ -36,7 +36,7 @@ var beamType = 'all'
 var solarElevThres = 0
 
 // Apply NDVI/Canopy Cover Filter
-var applyNDVIFilter = false
+var applyNDVIFilter = true
 // Add SRTM Elevation Data
 var addElevation = true
 // Add GLCM Data:
@@ -58,8 +58,8 @@ var simpleLandsat = true
 
 var startJulian = 1
 var endJulian = 365
-var startYear = 2019
-var endYear= 2019
+var startYear = 2020
+var endYear= 2020
 
 var AOI = testAOI
 
@@ -74,7 +74,7 @@ var imgTransform = [30,0,-2361915,0,-30,3177735]
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Name of CSV file
-var outName = 'GEDI_Landsat_Fusion_v16'
+var outName = 'GEDI_Landsat_Fusion_v15'
 // Name of Output Directory
 var outDir = "BDe2/tables"
 
@@ -129,10 +129,6 @@ var reprojectIMG = function(im){
     crsTransform: imgTransform,
     scale:imgScale
   })
-}
-
-var castIMG = function(im){
-  return im.int16()
 }
 
 var addLSDate = function(im){
@@ -519,8 +515,11 @@ if (simpleLandsat){
 }
 
 
+print(bandDictionary['reflectanceAll']+'lsDate')
+
 print("Landsat Band Names",lsPrep_wIndicies.first().bandNames())
 
+print(lsPrep_wIndicies.first().projection)
 
 
 //https://gis.stackexchange.com/questions/345962/create-paired-images-by-near-date
@@ -658,8 +657,6 @@ if (addElevation){
   var newTerrainVariable = srtm.addBands(slope).addBands(sinAspect).addBands(cosAspect)//.addBands(NorthnessExpo).addBands(EastnessExpo)
     .addBands(tpi11).addBands(tpi21).addBands(tpi41).addBands(theobaldHLI)//.addBands(foldedAspect)
   
-  var terrain100 = ['slope','tpi11','tpi21','tpi41']
-  var terrain10k = ['sinAspect','cosAspect','theobaldHLI']  
   gediMasterLS = gediMasterLS.addBands(newTerrainVariable)
 
 }
@@ -719,16 +716,7 @@ if (simpleLandsat){
   var optical=gediMasterLS.select(bandDictionary['reflectanceAll']).multiply(10000) //'lsDate'
 }
 
-var terrain100 = ['slope','tpi11','tpi21','tpi41']
-var terrain10k = ['sinAspect','cosAspect','theobaldHLI']
-
-var terrain100Bands = gediMasterLS.select(terrain100).multiply(100).int16()
-var terrain10kBands = gediMasterLS.select(terrain10k).multiply(10000).int16()
-
-
-gediMasterLS = gediMasterLS.addBands(optical,null,true).map(castIMG)
-gediMasterLS = gediMasterLS.addBands(terrain100Bands,null,true)
-gediMasterLS = gediMasterLS.addBands(terrain10kBands,null,true)
+gediMasterLS = gediMasterLS.addBands(optical,null,true)
 
 print(gediMasterLS,"gediMaster with Landsat")
 Map.addLayer(gediMasterLS,{},"with Landsat")
