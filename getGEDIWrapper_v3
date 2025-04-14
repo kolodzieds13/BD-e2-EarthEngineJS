@@ -52,6 +52,9 @@ var addGLCM = false
 // If 'addTexture' what band?
 var glcmBand = 'EVI'
 
+//Desired LandsatBands
+var simpleLandsat = false
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 //                Image Parameters Data
@@ -124,6 +127,28 @@ var addDateGEDI = function(im){
 function preserveId(image) {
   return image.set('original_id', image.get('system:index'));
 }
+
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//                Band Dictionary
+//
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+var bandDictionary = {
+  "reflectanceAll":["blue","green","red","nir","swir1","swir2","NDVI","NIRv","NBR","NDMI","EVI","SAVI","brightness",
+                  "greenness","wetness","tcAngleBG","tcAngleGW","tcAngleBW","tcDistBG","tcDistGW","tcDistBW"],
+  "reflectanceSimple":["blue","green","red","nir","swir1","swir2","NDVI","EVI"],
+  "texture":['_asm','_contrast','_corr','_var','_idm','_savg','_svar','_sent','_ent',
+            '_dvar','_dent','_imcorr1','_imcorr2',],
+            
+  "texture10000":["_asm","_idm","_corr","_sent","_dent","_imcorr1","_imcorr2"],
+  "textureDN":  ["_contrast","_var","_svar","_savg","_dvar"],
+  "textureOneThousand" : ["_ent",],
+}
+
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -254,93 +279,6 @@ Map.addLayer(finalGedi_v2,{},"gediMaster FINAL")
 
 // Map.addLayer(finalGedi_v2,vizzy,"finalGedi_v2 FINAL")
 
-
-var ExportBands10 = [
-  // "agbdINT",
-  "agbd",
-  "blue",
-  "green",
-  "red",
-  "nir",
-  "swir1",
-  "swir2",
-  "NDVI",
-  "NBR",
-  "NDMI",
-  "EVI",
-  "SAVI",
-  "brightness",
-  "greenness",
-  "wetness",
-  "tcAngleBG",
-  "tcAngleGW",
-  "tcAngleBW",
-  "tcDistBG",
-  "tcDistGW",
-  "tcDistBW"]
-  
-  
-  
-var texture10000 = [
-  "EVI_asm",
-  "EVI_idm",
-  "EVI_corr",
-  "EVI_sent",
-  "EVI_dent",
-  "EVI_imcorr1",
-  "EVI_imcorr2"]
-
-
-var textureDN = [
-  "EVI_contrast",
-  "EVI_var",
-  "EVI_svar",
-  "EVI_savg",
-  "EVI_dvar",
-  ]
-
-var textureOneThousand = ["EVI_ent",]
-
-  
-var reflectanceBands = [
-  "blue",
-  "green",
-  "red",
-  "nir",
-  "swir1",
-  "swir2",
-  "NDVI",
-  "NBR",
-  "NDMI",
-  "EVI",
-  "SAVI",
-  "brightness",
-  "greenness",
-  "wetness",
-  "tcAngleBG",
-  "tcAngleGW",
-  "tcAngleBW",
-  "tcDistBG",
-  "tcDistGW",
-  "tcDistBW"
-  ]
-  
-  
-var textureOnly = [
-  'EVI_asm',
-  'EVI_contrast',
-  'EVI_corr',
-  'EVI_var',
-  'EVI_idm',
-  'EVI_savg',
-  'EVI_svar',
-  'EVI_sent',
-  'EVI_ent',
-  'EVI_dvar',
-  'EVI_dent',
-  'EVI_imcorr1',
-  'EVI_imcorr2',
-  ]
 
 var qualityMask = function(im) {
   return im.updateMask(im.select('l4_quality_flag').eq(1))
@@ -600,8 +538,14 @@ var lsPrep_wIndicies = lsPrep
         .map(addLSDate)
         .map(getImagesLib.addSAVIandEVI)
         .map(getImagesLib.addTCAngles)
-        // .select('blue','green','red','nir','swir1','swir2','NDVI','lsDate')
 
+if (simpleLandsat){
+  return lsPrep_wIndicies=lsPrep_wIndicies.select(bandDictionary['reflectanceSimple']+'lsDate') //'lsDate'
+} else {
+  return lsPrep_wIndicies=lsPrep_wIndicies.select(bandDictionary['reflectanceAll']+'lsDate') //'lsDate'
+}
+
+print(lsPrep_wIndicies.bandNames())
 
 
 
@@ -745,25 +689,25 @@ if (addElevation){
 
 
 
-//Calculate heat load index, based on Theobald et al (2015)
-//https://github.com/zachlevitt/earth-engine/blob/master/topoModules.md#theobaldhlihttps://github.com/zachlevitt/earth-engine/blob/master/topoModules.md#theobaldhli
-function addHLI(img) {
-  var dem = img.select('dem')//.divide(3.28084)
-  var aspectRadians = ee.Terrain.aspect(dem).multiply(ee.Number(0.01745329252))
-  var slopeRadians = ee.Terrain.slope(dem).multiply(ee.Number(0.01745329252))
-  var foldedAspect = aspectRadians.subtract(ee.Number(4.3196899)).abs().multiply(ee.Number(-1)).add(ee.Number(3.141593)).abs()
-  var theobaldHLI = (slopeRadians.cos().multiply(ee.Number(1.582)).multiply(ee.Number(0.82886954044))).subtract(foldedAspect.cos().multiply(ee.Number(1.5)).multiply(slopeRadians.sin().multiply(ee.Number(0.55944194062)))).subtract(slopeRadians.sin().multiply(ee.Number(0.262)).multiply(ee.Number(0.55944194062))).add(foldedAspect.sin().multiply(ee.Number(0.607)).multiply(slopeRadians.sin())).add(ee.Number(-1.467));
-  return img.addBands(theobaldHLI.exp().multiply(10000).int16().rename('HLI'))
-};
+// //Calculate heat load index, based on Theobald et al (2015)
+// //https://github.com/zachlevitt/earth-engine/blob/master/topoModules.md#theobaldhlihttps://github.com/zachlevitt/earth-engine/blob/master/topoModules.md#theobaldhli
+// function addHLI(img) {
+//   var dem = img.select('dem')//.divide(3.28084)
+//   var aspectRadians = ee.Terrain.aspect(dem).multiply(ee.Number(0.01745329252))
+//   var slopeRadians = ee.Terrain.slope(dem).multiply(ee.Number(0.01745329252))
+//   var foldedAspect = aspectRadians.subtract(ee.Number(4.3196899)).abs().multiply(ee.Number(-1)).add(ee.Number(3.141593)).abs()
+//   var theobaldHLI = (slopeRadians.cos().multiply(ee.Number(1.582)).multiply(ee.Number(0.82886954044))).subtract(foldedAspect.cos().multiply(ee.Number(1.5)).multiply(slopeRadians.sin().multiply(ee.Number(0.55944194062)))).subtract(slopeRadians.sin().multiply(ee.Number(0.262)).multiply(ee.Number(0.55944194062))).add(foldedAspect.sin().multiply(ee.Number(0.607)).multiply(slopeRadians.sin())).add(ee.Number(-1.467));
+//   return img.addBands(theobaldHLI.exp().multiply(10000).int16().rename('HLI'))
+// };
 
-function addCyclicAspect (img){
-  var aspect = img.select('aspect')
-  var aspectRadians = aspect.multiply(ee.Number(0.01745329252))
-  var sinAspect = aspectRadians.sin().rename('sinAspect').multiply(10000).int16()
-  var cosAspect = aspectRadians.cos().rename('cosAspect').multiply(10000).int16()
-  return img.addBands(sinAspect).addBands(cosAspect)
+// function addCyclicAspect (img){
+//   var aspect = img.select('aspect')
+//   var aspectRadians = aspect.multiply(ee.Number(0.01745329252))
+//   var sinAspect = aspectRadians.sin().rename('sinAspect').multiply(10000).int16()
+//   var cosAspect = aspectRadians.cos().rename('cosAspect').multiply(10000).int16()
+//   return img.addBands(sinAspect).addBands(cosAspect)
   
-}
+// }
 
 
 
@@ -830,6 +774,7 @@ if (addGLCM){
 //             FINAL UPDATE
 //
 /////////////////////////////////////////////////////////////////////////
+
 
 var optical = gediMasterLS.select(reflectanceBands).multiply(10000)
 gediMasterLS = gediMasterLS.addBands(optical,null,true)
