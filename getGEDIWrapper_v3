@@ -138,9 +138,9 @@ function preserveId(image) {
 
 
 var bandDictionary = {
-  "reflectanceAll":["blue","green","red","nir","swir1","swir2","NDVI","NIRv","NBR","NDMI","EVI","SAVI","brightness",
-                  "greenness","wetness","tcAngleBG","tcAngleGW","tcAngleBW","tcDistBG","tcDistGW","tcDistBW"],
-  "reflectanceSimple":["blue","green","red","nir","swir1","swir2","NDVI","EVI"],
+  "reflectanceAll":ee.List(["blue","green","red","nir","swir1","swir2","NDVI","NIRv","NBR","NDMI","EVI","SAVI","brightness",
+                  "greenness","wetness","tcAngleBG","tcAngleGW","tcAngleBW","tcDistBG","tcDistGW","tcDistBW"]),
+  "reflectanceSimple":ee.List(["blue","green","red","nir","swir1","swir2","NDVI","EVI"]),
   "texture":['_asm','_contrast','_corr','_var','_idm','_savg','_svar','_sent','_ent',
             '_dvar','_dent','_imcorr1','_imcorr2',],
             
@@ -540,12 +540,15 @@ var lsPrep_wIndicies = lsPrep
         .map(getImagesLib.addTCAngles)
 
 if (simpleLandsat){
-  return lsPrep_wIndicies=lsPrep_wIndicies.select(bandDictionary['reflectanceSimple']+'lsDate') //'lsDate'
+  lsPrep_wIndicies=lsPrep_wIndicies.select(bandDictionary['reflectanceSimple']+'lsDate') //'lsDate'
 } else {
-  return lsPrep_wIndicies=lsPrep_wIndicies.select(bandDictionary['reflectanceAll']+'lsDate') //'lsDate'
+  lsPrep_wIndicies=lsPrep_wIndicies.select(bandDictionary['reflectanceAll']+'lsDate') //'lsDate'
 }
 
-print(lsPrep_wIndicies.bandNames())
+
+print(bandDictionary['reflectanceAll']+'lsDate')
+
+print("Landsat Band Names",lsPrep_wIndicies.first().bandNames())
 
 
 
