@@ -1,24 +1,16 @@
-/**** Start of imports. If edited, may not auto-convert in the playground. ****/
-var testAOI = 
-    /* color: #d63000 */
-    /* shown: false */
-    /* displayProperties: [
-      {
-        "type": "rectangle"
-      }
-    ] */
-    ee.Geometry.Polygon(
-        [[[-124.1908214570261, 48.01747940426768],
-          [-124.1908214570261, 47.88318938949384],
-          [-123.93401603710423, 47.88318938949384],
-          [-123.93401603710423, 48.01747940426768]]], null, false),
-    vizzy = {"opacity":1,"bands":["beam"],"min":0,"max":11,"palette":["ff6216","ff940c","ffed04","b7ff0e","10ff7c","060cff","9e1cff","000000"]};
-/***** End of imports. If edited, may not auto-convert in the playground. *****/
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 //                GET GEDI Data
 //
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+var testAOI = ee.Geometry.Polygon(
+        [[[-124.1908214570261, 48.01747940426768],
+          [-124.1908214570261, 47.88318938949384],
+          [-123.93401603710423, 47.88318938949384],
+          [-123.93401603710423, 48.01747940426768]]], null, false);
+
+
 
 //Module imports
 var getImagesLib = require('users/aaronkamoske/GTAC-Modules:getImagesLib.js');
@@ -131,7 +123,13 @@ function preserveId(image) {
   return image.set('original_id', image.get('system:index'));
 }
 
-
+var reprojectGEDI = function(im){
+  return im.reproject({
+    crs: imgCRS,
+    crsTransform: imgTransform,
+    scale:imgScale
+  })
+}
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -275,6 +273,7 @@ finalGedi_v2 = finalGedi_v2.map(sensitivityMask)
 finalGedi_v2 = finalGedi_v2.map(beamFilter)
 finalGedi_v2 = finalGedi_v2.map(addDateGEDI)
 finalGedi_v2 = finalGedi_v2.map(preserveId)
+finalGedi_v2 = finalGedi_v2.map(reprojectGEDI)
 
 print(finalGedi_v2,"gediMaster")
 Map.addLayer(finalGedi_v2,{},"gediMaster FINAL")
