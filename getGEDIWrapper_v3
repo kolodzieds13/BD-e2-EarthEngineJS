@@ -23,9 +23,9 @@ var testAOI =
 //Module imports
 var getImagesLib = require('users/aaronkamoske/GTAC-Modules:getImagesLib.js');
 
-var yearToday = new Date().toLocalString("en-US",{timeZone:"America/Denver",year:"numeric"})
-var monthToday = new Date().toLocalString("en-US",{timeZone:"America/Denver",month:"2-digit"})
-var dayToday = new Date().toLocalString("en-US",{timeZone:"America/Denver",day:"2-digit"})
+var yearToday = new Date().toLocaleString("en-US",{timeZone:"America/Denver",year:"numeric"})
+var monthToday = new Date().toLocaleString("en-US",{timeZone:"America/Denver",month:"2-digit"})
+var dayToday = new Date().toLocaleString("en-US",{timeZone:"America/Denver",day:"2-digit"})
 
 var dateToday = yearToday+monthToday+dayToday
 
@@ -48,7 +48,7 @@ var applyNDVIFilter = true
 // Add SRTM Elevation Data
 var addElevation = true
 // Add GLCM Data:
-var addGLCM = true
+var addGLCM = false
 // If 'addTexture' what band?
 var glcmBand = 'EVI'
 
@@ -870,7 +870,7 @@ var featColExport = sampled_points2.map(function (feature) {
 
 Export.table.toDrive({
   collection: featColExport,
-  description: outName+"_"dateToday,
+  description: outName+"_"+dateToday,
   folder: outDir,
   fileFormat: 'CSV'
 });
