@@ -58,8 +58,8 @@ var simpleLandsat = true
 
 var startJulian = 1
 var endJulian = 365
-var startYear = 2019
-var endYear= 2023
+var startYear = 2020
+var endYear= 2020
 
 var AOI = testAOI
 
