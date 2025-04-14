@@ -59,7 +59,7 @@ var simpleLandsat = true
 var startJulian = 1
 var endJulian = 365
 var startYear = 2019
-var endYear= 2019
+var endYear= 2023
 
 var AOI = testAOI
 
@@ -74,7 +74,7 @@ var imgTransform = [30,0,-2361915,0,-30,3177735]
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Name of CSV file
-var outName = 'GEDI_Landsat_Fusion_v13'
+var outName = 'GEDI_Landsat_Fusion_v15'
 // Name of Output Directory
 var outDir = "BDe2/tables"
 
@@ -687,29 +687,13 @@ if (addGLCM){
   
   
   var glcm3 = glcmPrep.glcmTexture({
-    size:3.5,
+    size:3,
     kernel: ee.Kernel.square({
-    radius: 3.5, units: 'pixels', normalize: true})
+    radius: 3, units: 'pixels', normalize: true})
     
   })
   
-  
   var glcm3_smooth = glcm3.convolve(boxcar); 
-  
-  // var ndvi_glcm_rename3_smooth_RS = ndvi_glcm_rename3_smooth.reproject({
-  //     crs: LsatProjection
-  //     })
-  //     .reduceResolution({
-  //       reducer: ee.Reducer.mean()
-  //     })
-  
-  
-  // var ndvi_texture = ndvi_glcm_rename1_smooth.addBands(ndvi_glcm_rename2_smooth).addBands(ndvi_glcm_rename3_smooth)
-  
-  
-  // var ndvi_texture_VarConIdm = ndvi_glcm_rename3_smooth.select(["NDVI_var_3", "NDVI_contrast_3"]).divide(10000)
-  // var ndvi_texture_AsmCorrEnt = ndvi_glcm_rename3_smooth.select(["NDVI_asm_3","NDVI_corr_3","NDVI_ent_3", "NDVI_idm_3"]).multiply(10000)
-  // var ndvi_texture = ndvi_glcm_rename3_smooth.addBands(ndvi_texture_VarConIdm,null,true).addBands(ndvi_texture_AsmCorrEnt,null,true)
   
   Map.addLayer(glcm3_smooth,{},'glcm3_smooth')
   
