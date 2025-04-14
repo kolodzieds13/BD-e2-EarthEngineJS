@@ -507,7 +507,6 @@ var lsPrep_wIndicies = lsPrep
         .map(addLSDate)
         .map(getImagesLib.addSAVIandEVI)
         .map(getImagesLib.addTCAngles)
-        .resample('bicubic')
 
 if (simpleLandsat){
   lsPrep_wIndicies=lsPrep_wIndicies.select(bandDictionary['reflectanceSimple'].add('lsDate')) //'lsDate'
@@ -639,7 +638,10 @@ if (addElevation){
   // var NorthnessExpo = slopeRadians.sin().multiply(sinAspect).rename("NorthnessExposure")
   // var EastnessExpo = slopeRadians.sin().multiply(cosAspect).rename("EastnessExposure")
   
-  // Add Heat Load Index
+  // //Calculate heat load index, based on Theobald et al (2015)
+  // //https://github.com/zachlevitt/earth-engine/blob/master/topoModules.md#theobaldhlihttps://github.com/zachlevitt/earth-engine/blob/master/topoModules.md#theobaldhli
+
+
   var foldedAspect = aspectRadians.subtract(ee.Number(4.3196899)).abs().multiply(ee.Number(-1)).add(PI).abs().rename('foldedAspect')
   var theobaldHLI = (slopeRadians.cos().multiply(ee.Number(1.582)).multiply(ee.Number(0.82886954044))).subtract(foldedAspect.cos().multiply(ee.Number(1.5)).multiply(slopeRadians.sin().multiply(ee.Number(0.55944194062)))).subtract(slopeRadians.sin().multiply(ee.Number(0.262)).multiply(ee.Number(0.55944194062))).add(foldedAspect.sin().multiply(ee.Number(0.607)).multiply(slopeRadians.sin())).add(ee.Number(-1.467)).rename('HLI');
   
@@ -658,31 +660,6 @@ if (addElevation){
   gediMasterLS = gediMasterLS.addBands(newTerrainVariable)
 
 }
-
-
-
-
-
-// //Calculate heat load index, based on Theobald et al (2015)
-// //https://github.com/zachlevitt/earth-engine/blob/master/topoModules.md#theobaldhlihttps://github.com/zachlevitt/earth-engine/blob/master/topoModules.md#theobaldhli
-// function addHLI(img) {
-//   var dem = img.select('dem')//.divide(3.28084)
-//   var aspectRadians = ee.Terrain.aspect(dem).multiply(ee.Number(0.01745329252))
-//   var slopeRadians = ee.Terrain.slope(dem).multiply(ee.Number(0.01745329252))
-//   var foldedAspect = aspectRadians.subtract(ee.Number(4.3196899)).abs().multiply(ee.Number(-1)).add(ee.Number(3.141593)).abs()
-//   var theobaldHLI = (slopeRadians.cos().multiply(ee.Number(1.582)).multiply(ee.Number(0.82886954044))).subtract(foldedAspect.cos().multiply(ee.Number(1.5)).multiply(slopeRadians.sin().multiply(ee.Number(0.55944194062)))).subtract(slopeRadians.sin().multiply(ee.Number(0.262)).multiply(ee.Number(0.55944194062))).add(foldedAspect.sin().multiply(ee.Number(0.607)).multiply(slopeRadians.sin())).add(ee.Number(-1.467));
-//   return img.addBands(theobaldHLI.exp().multiply(10000).int16().rename('HLI'))
-// };
-
-// function addCyclicAspect (img){
-//   var aspect = img.select('aspect')
-//   var aspectRadians = aspect.multiply(ee.Number(0.01745329252))
-//   var sinAspect = aspectRadians.sin().rename('sinAspect').multiply(10000).int16()
-//   var cosAspect = aspectRadians.cos().rename('cosAspect').multiply(10000).int16()
-//   return img.addBands(sinAspect).addBands(cosAspect)
-  
-// }
-
 
 
 
