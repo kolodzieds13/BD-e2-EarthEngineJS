@@ -141,12 +141,12 @@ var bandDictionary = {
   "reflectanceAll":ee.List(["blue","green","red","nir","swir1","swir2","NDVI","NIRv","NBR","NDMI","EVI","SAVI","brightness",
                   "greenness","wetness","tcAngleBG","tcAngleGW","tcAngleBW","tcDistBG","tcDistGW","tcDistBW"]),
   "reflectanceSimple":ee.List(["blue","green","red","nir","swir1","swir2","NDVI","EVI"]),
-  "texture":['_asm','_contrast','_corr','_var','_idm','_savg','_svar','_sent','_ent',
-            '_dvar','_dent','_imcorr1','_imcorr2',],
+  "texture":ee.List(['_asm','_contrast','_corr','_var','_idm','_savg','_svar','_sent','_ent',
+            '_dvar','_dent','_imcorr1','_imcorr2',]),
             
-  "texture10000":["_asm","_idm","_corr","_sent","_dent","_imcorr1","_imcorr2"],
-  "textureDN":  ["_contrast","_var","_svar","_savg","_dvar"],
-  "textureOneThousand" : ["_ent",],
+  "texture10000":ee.List(["_asm","_idm","_corr","_sent","_dent","_imcorr1","_imcorr2"]),
+  "textureDN":  ee.List(["_contrast","_var","_svar","_savg","_dvar"]),
+  "textureOneThousand" : ee.List(["_ent",]),
 }
 
 
@@ -540,9 +540,9 @@ var lsPrep_wIndicies = lsPrep
         .map(getImagesLib.addTCAngles)
 
 if (simpleLandsat){
-  lsPrep_wIndicies=lsPrep_wIndicies.select(bandDictionary['reflectanceSimple']+'lsDate') //'lsDate'
+  lsPrep_wIndicies=lsPrep_wIndicies.select(bandDictionary['reflectanceSimple'].add('lsDate')) //'lsDate'
 } else {
-  lsPrep_wIndicies=lsPrep_wIndicies.select(bandDictionary['reflectanceAll']+'lsDate') //'lsDate'
+  lsPrep_wIndicies=lsPrep_wIndicies.select(bandDictionary['reflectanceAll'].add('lsDate')) //'lsDate'
 }
 
 
@@ -778,8 +778,12 @@ if (addGLCM){
 //
 /////////////////////////////////////////////////////////////////////////
 
+if (simpleLandsat){
+  var optical=gediMasterLS.select(bandDictionary['reflectanceSimple']).multiply(10000) //'lsDate'
+} else {
+  var optical=gediMasterLS.select(bandDictionary['reflectanceAll']).multiply(10000) //'lsDate'
+}
 
-var optical = gediMasterLS.select(reflectanceBands).multiply(10000)
 gediMasterLS = gediMasterLS.addBands(optical,null,true)
 
 print(gediMasterLS,"gediMaster with Landsat")
