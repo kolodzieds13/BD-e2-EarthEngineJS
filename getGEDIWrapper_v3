@@ -123,13 +123,20 @@ function preserveId(image) {
   return image.set('original_id', image.get('system:index'));
 }
 
-var reprojectGEDI = function(im){
+var reprojectIMG = function(im){
   return im.reproject({
     crs: imgCRS,
     crsTransform: imgTransform,
     scale:imgScale
   })
 }
+
+var addLSDate = function(im){
+  var doy = im.date().format('YYYYMMdd');
+  var doyBand = ee.Image.constant(ee.Number.parse(doy)).rename('lsDate').toInt()
+
+  return im.addBands(doyBand);
+};
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -278,46 +285,6 @@ finalGedi_v2 = finalGedi_v2.map(preserveId)
 print(finalGedi_v2,"gediMaster")
 Map.addLayer(finalGedi_v2,{},"gediMaster FINAL")
 
-
-// Map.addLayer(finalGedi_v2,vizzy,"finalGedi_v2 FINAL")
-
-
-var qualityMask = function(im) {
-  return im.updateMask(im.select('l4_quality_flag').eq(1))
-      .updateMask(im.select('degrade_flag').eq(0));
-};
-
-var qualityMask99 = function(im) {
-  return im.updateMask(im.select('l2b_quality_flag').eq(1))
-      .updateMask(im.select('degrade_flag').eq(0));
-};
-// var GEDI_L2B_Attribution = ee.ImageCollection('LARSE/GEDI/GEDI02_B_002_MONTHLY')
-//                   .map(qualityMask99)
-
-
-var qualityMask100 = function(im) {
-  return im.updateMask(im.select('quality_flag').eq(1))
-      .updateMask(im.select('degrade_flag').eq(0));
-};
-
-var reprojectIMG = function(im){
-  return im.reproject({
-    crs: imgCRS,
-    crsTransform: imgTransform})
-}
-
-var getYear = (function(im){
-  var date= ee.Date(im.get('system:time_start'))
-  return im.set('year', ee.Number(date.get('year')))
-})
-
-
-var addLSDate = function(im){
-  var doy = im.date().format('YYYYMMdd');
-  var doyBand = ee.Image.constant(ee.Number.parse(doy)).rename('lsDate').toInt()
-
-  return im.addBands(doyBand);
-};
 
 
 // Define a max difference filter to compare timestamps.
@@ -540,7 +507,7 @@ var lsPrep_wIndicies = lsPrep
         .map(addLSDate)
         .map(getImagesLib.addSAVIandEVI)
         .map(getImagesLib.addTCAngles)
-        .map()
+        .resample('bicubic')
 
 if (simpleLandsat){
   lsPrep_wIndicies=lsPrep_wIndicies.select(bandDictionary['reflectanceSimple'].add('lsDate')) //'lsDate'
@@ -644,12 +611,12 @@ if (addElevation){
     // .setDefaultProjection(srtmCRS,srtmTransform,null)
     // .setDefaultProjection('EPSG:4326',null,30)
     .resample("bicubic")
-    .reproject({
-      crs: imgCRS,
-      crsTransform: imgTransform,
-      scale: imgScale
-          //scale: 30 //90
-    })
+    // .reproject({
+    //   crs: imgCRS,
+    //   crsTransform: imgTransform,
+    //   scale: imgScale
+    //       //scale: 30 //90
+    // })
     .select(['elevation'],['demSRTM'])
     // // .clip(state)
    
