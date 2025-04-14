@@ -655,8 +655,8 @@ if (addElevation){
   var tpi41 = srtm.subtract(mean03).rename("tpi41")
   
   // Stack Terrain Variables
-  var newTerrainVariable = srtm.addBands(slope.multiply(100)).addBands(sinAspect.multiply(10000)).addBands(cosAspect.multiply(10000))//.addBands(NorthnessExpo).addBands(EastnessExpo)
-    .addBands(tpi11.multiply(100)).addBands(tpi21.multiply(100)).addBands(tpi41.multiply(100)).addBands(theobaldHLI.multiply(10000))//.addBands(foldedAspect)
+  var newTerrainVariable = srtm.addBands(slope).addBands(sinAspect).addBands(cosAspect)//.addBands(NorthnessExpo).addBands(EastnessExpo)
+    .addBands(tpi11).addBands(tpi21).addBands(tpi41).addBands(theobaldHLI)//.addBands(foldedAspect)
   
   var terrain100 = ['slope','tpi11','tpi21','tpi41']
   var terrain10k = ['sinAspect','cosAspect','theobaldHLI']  
