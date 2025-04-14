@@ -36,7 +36,7 @@ var beamType = 'all'
 var solarElevThres = 0
 
 // Apply NDVI/Canopy Cover Filter
-var applyNDVIFilter = true
+var applyNDVIFilter = false
 // Add SRTM Elevation Data
 var addElevation = true
 // Add GLCM Data:
@@ -74,7 +74,7 @@ var imgTransform = [30,0,-2361915,0,-30,3177735]
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Name of CSV file
-var outName = 'GEDI_Landsat_Fusion_v15'
+var outName = 'GEDI_Landsat_Fusion_v16'
 // Name of Output Directory
 var outDir = "BDe2/tables"
 
