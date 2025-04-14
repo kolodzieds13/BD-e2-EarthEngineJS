@@ -58,8 +58,8 @@ var simpleLandsat = true
 
 var startJulian = 1
 var endJulian = 365
-var startYear = 2020
-var endYear= 2020
+var startYear = 2019
+var endYear= 2019
 
 var AOI = testAOI
 
@@ -130,6 +130,8 @@ var reprojectIMG = function(im){
     scale:imgScale
   })
 }
+
+
 
 var addLSDate = function(im){
   var doy = im.date().format('YYYYMMdd');
@@ -507,7 +509,6 @@ var lsPrep_wIndicies = lsPrep
         .map(addLSDate)
         .map(getImagesLib.addSAVIandEVI)
         .map(getImagesLib.addTCAngles)
-        .int16()
 
 if (simpleLandsat){
   lsPrep_wIndicies=lsPrep_wIndicies.select(bandDictionary['reflectanceSimple'].add('lsDate')) //'lsDate'
@@ -515,12 +516,10 @@ if (simpleLandsat){
   lsPrep_wIndicies=lsPrep_wIndicies.select(bandDictionary['reflectanceAll'].add('lsDate')) //'lsDate'
 }
 
-
-print(bandDictionary['reflectanceAll']+'lsDate')
+lsPrep_wIndicies = lsPrep_wIndicies.cast('int16')
 
 print("Landsat Band Names",lsPrep_wIndicies.first().bandNames())
 
-print(lsPrep_wIndicies.first().projection)
 
 
 //https://gis.stackexchange.com/questions/345962/create-paired-images-by-near-date
