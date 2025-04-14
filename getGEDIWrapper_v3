@@ -41,10 +41,10 @@ var solarElevThres = 0
 var applyNDVIFilter = true
 // Add SRTM Elevation Data
 var addElevation = true
-// Add Texture Elevation Data
-var addTexture = true
+// Add GLCM Data:
+var addGLCM = true
 // If 'addTexture' what band?
-var textureBand = 'EVI'
+var glcmBand = 'EVI'
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -70,7 +70,7 @@ var imgTransform = [30,0,-2361915,0,-30,3177735]
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Name of CSV file
-var outName = 'GEDI_Landsat_Fusion'
+var outName = 'GEDI_Landsat_Fusion_v11'
 // Name of Output Directory
 var outDir = "BDe2/tables"
 
@@ -739,14 +739,13 @@ if (addElevation){
 
 
 if (addGLCM){
-
-  
+  print("Adding "+glcmBand + " to Export")
   // Define a boxcar or low-pass kernel.
   var boxcar = ee.Kernel.square({
     radius: 2, units: 'pixels', normalize: true
   });
       
-  var glcmPrep = synthIMG.select(textureBand)
+  var glcmPrep = synthIMG.select(glcmBand)
     .multiply(ee.Number(10000))
     .toInt16()
   // Kernel 7 x 7
@@ -781,7 +780,7 @@ if (addGLCM){
   
   gediMasterLS = gediMasterLS.addBands(glcm3_smooth)
 
-
+}
 
 
 
