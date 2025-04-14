@@ -131,7 +131,9 @@ var reprojectIMG = function(im){
   })
 }
 
-
+var castIMG = function(im){
+  return im.int16()
+}
 
 var addLSDate = function(im){
   var doy = im.date().format('YYYYMMdd');
@@ -516,7 +518,6 @@ if (simpleLandsat){
   lsPrep_wIndicies=lsPrep_wIndicies.select(bandDictionary['reflectanceAll'].add('lsDate')) //'lsDate'
 }
 
-lsPrep_wIndicies = lsPrep_wIndicies.cast('int16')
 
 print("Landsat Band Names",lsPrep_wIndicies.first().bandNames())
 
@@ -643,8 +644,7 @@ if (addElevation){
 
 
   var foldedAspect = aspectRadians.subtract(ee.Number(4.3196899)).abs().multiply(ee.Number(-1)).add(PI).abs().rename('foldedAspect')
-  var theobaldHLI = (slopeRadians.cos().multiply(ee.Number(1.582)).multiply(ee.Number(0.82886954044))).subtract(foldedAspect.cos().multiply(ee.Number(1.5)).multiply(slopeRadians.sin().multiply(ee.Number(0.55944194062)))).subtract(slopeRadians.sin().multiply(ee.Number(0.262)).multiply(ee.Number(0.55944194062))).add(foldedAspect.sin().multiply(ee.Number(0.607)).multiply(slopeRadians.sin())).add(ee.Number(-1.467))
-    .rename('HLI');
+  var theobaldHLI = (slopeRadians.cos().multiply(ee.Number(1.582)).multiply(ee.Number(0.82886954044))).subtract(foldedAspect.cos().multiply(ee.Number(1.5)).multiply(slopeRadians.sin().multiply(ee.Number(0.55944194062)))).subtract(slopeRadians.sin().multiply(ee.Number(0.262)).multiply(ee.Number(0.55944194062))).add(foldedAspect.sin().multiply(ee.Number(0.607)).multiply(slopeRadians.sin())).add(ee.Number(-1.467)).rename('HLI');
   
   // Add Topographic Posidition Index
   var mean01 = srtm.focalMean(5.5, 'square');
@@ -657,8 +657,9 @@ if (addElevation){
   // Stack Terrain Variables
   var newTerrainVariable = srtm.addBands(slope.multiply(100)).addBands(sinAspect.multiply(10000)).addBands(cosAspect.multiply(10000))//.addBands(NorthnessExpo).addBands(EastnessExpo)
     .addBands(tpi11.multiply(100)).addBands(tpi21.multiply(100)).addBands(tpi41.multiply(100)).addBands(theobaldHLI.multiply(10000))//.addBands(foldedAspect)
-    .int32()
-    
+  
+  var terrain100 = ['slope','tpi11','tpi21','tpi41']
+  var terrain10k = ['sinAspect','cosAspect','theobaldHLI']  
   gediMasterLS = gediMasterLS.addBands(newTerrainVariable)
 
 }
@@ -718,7 +719,16 @@ if (simpleLandsat){
   var optical=gediMasterLS.select(bandDictionary['reflectanceAll']).multiply(10000) //'lsDate'
 }
 
-gediMasterLS = gediMasterLS.addBands(optical,null,true)
+var terrain100 = ['slope','tpi11','tpi21','tpi41']
+var terrain10k = ['sinAspect','cosAspect','theobaldHLI']
+
+var terrain100Bands = gediMasterLS.select(terrain100).multiply(100).int16()
+var terrain10kBands = gediMasterLS.select(terrain10k).multiply(10000).int16()
+
+
+gediMasterLS = gediMasterLS.addBands(optical,null,true).map(castIMG)
+gediMasterLS = gediMasterLS.addBands(terrain100Bands,null,true)
+gediMasterLS = gediMasterLS.addBands(terrain10kBands,null,true)
 
 print(gediMasterLS,"gediMaster with Landsat")
 Map.addLayer(gediMasterLS,{},"with Landsat")
