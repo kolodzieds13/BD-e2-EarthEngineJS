@@ -42,7 +42,7 @@ var applyNDVIFilter = true
 // Add SRTM Elevation Data
 var addElevation = true
 // Add Texture Elevation Data
-var addTexture = false
+var addTexture = true
 // If 'addTexture' what band?
 var textureBand = 'EVI'
 
@@ -72,7 +72,7 @@ var imgTransform = [30,0,-2361915,0,-30,3177735]
 // Name of CSV file
 var outName = 'GEDI_Landsat_Fusion'
 // Name of Output Directory
-var outDir = ""
+var outDir = "BDe2/tables"
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -739,10 +739,20 @@ if (addElevation){
 
 
 if (addGLCM){
+
+  
+  // Define a boxcar or low-pass kernel.
+  var boxcar = ee.Kernel.square({
+    radius: 2, units: 'pixels', normalize: true
+  });
+      
+  var glcmPrep = synthIMG.select(textureBand)
+    .multiply(ee.Number(10000))
+    .toInt16()
   // Kernel 7 x 7
   
   
-  var ndvi_glcm3 = ndvi_glcm_prep.glcmTexture({
+  var glcm3 = glcmPrep.glcmTexture({
     size:3,
     kernel: ee.Kernel.square({
     radius: 3, units: 'pixels', normalize: true})
@@ -750,11 +760,7 @@ if (addGLCM){
   })
   
   
-  var ndvi_glcm_rename3 = ndvi_glcm3.select(['NDVI_savg','NDVI_var','NDVI_idm','NDVI_contrast',
-    'NDVI_diss','NDVI_ent','NDVI_asm','NDVI_corr'],['NDVI_savg_3','NDVI_var_3','NDVI_idm_3','NDVI_contrast_3',
-    'NDVI_diss_3','NDVI_ent_3','NDVI_asm_3','NDVI_corr_3']);
-  
-  var ndvi_glcm_rename3_smooth = ndvi_glcm_rename3.convolve(boxcar); 
+  var glcm3_smooth = glcm3.convolve(boxcar); 
   
   // var ndvi_glcm_rename3_smooth_RS = ndvi_glcm_rename3_smooth.reproject({
   //     crs: LsatProjection
@@ -767,16 +773,13 @@ if (addGLCM){
   // var ndvi_texture = ndvi_glcm_rename1_smooth.addBands(ndvi_glcm_rename2_smooth).addBands(ndvi_glcm_rename3_smooth)
   
   
-  var ndvi_texture_VarConIdm = ndvi_glcm_rename3_smooth.select(["NDVI_var_3", "NDVI_contrast_3"]).divide(10000)
-  var ndvi_texture_AsmCorrEnt = ndvi_glcm_rename3_smooth.select(["NDVI_asm_3","NDVI_corr_3","NDVI_ent_3", "NDVI_idm_3"]).multiply(10000)
+  // var ndvi_texture_VarConIdm = ndvi_glcm_rename3_smooth.select(["NDVI_var_3", "NDVI_contrast_3"]).divide(10000)
+  // var ndvi_texture_AsmCorrEnt = ndvi_glcm_rename3_smooth.select(["NDVI_asm_3","NDVI_corr_3","NDVI_ent_3", "NDVI_idm_3"]).multiply(10000)
+  // var ndvi_texture = ndvi_glcm_rename3_smooth.addBands(ndvi_texture_VarConIdm,null,true).addBands(ndvi_texture_AsmCorrEnt,null,true)
   
+  Map.addLayer(glcm3_smooth,{},'glcm3_smooth')
   
-  
-  
-  var ndvi_texture = ndvi_glcm_rename3_smooth.addBands(ndvi_texture_VarConIdm,null,true).addBands(ndvi_texture_AsmCorrEnt,null,true)
-  
-
-  Map.addLayer(ndvi_texture,{},'ndvi texture 2')
+  gediMasterLS = gediMasterLS.addBands(glcm3_smooth)
 
 
 
