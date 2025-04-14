@@ -540,6 +540,7 @@ var lsPrep_wIndicies = lsPrep
         .map(addLSDate)
         .map(getImagesLib.addSAVIandEVI)
         .map(getImagesLib.addTCAngles)
+        .map()
 
 if (simpleLandsat){
   lsPrep_wIndicies=lsPrep_wIndicies.select(bandDictionary['reflectanceSimple'].add('lsDate')) //'lsDate'
