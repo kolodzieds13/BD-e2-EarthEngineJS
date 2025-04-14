@@ -23,6 +23,12 @@ var testAOI =
 //Module imports
 var getImagesLib = require('users/aaronkamoske/GTAC-Modules:getImagesLib.js');
 
+var yearToday = new Date().toLocalString("en-US",{timeZone:"America/Denver",year:"numeric"})
+var monthToday = new Date().toLocalString("en-US",{timeZone:"America/Denver",month:"2-digit"})
+var dayToday = new Date().toLocalString("en-US",{timeZone:"America/Denver",day:"2-digit"})
+
+var dateToday = yearToday+monthToday+dayToday
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 //                GEDI Parameters
@@ -745,16 +751,19 @@ if (addGLCM){
     radius: 2, units: 'pixels', normalize: true
   });
       
-  var glcmPrep = synthIMG.select(glcmBand)
+  var glcmPrep = gediMasterLS.select(glcmBand)
     .multiply(ee.Number(10000))
     .toInt16()
+    .unitScale(-10000,10000)
+    .multiply(255)
+    .toByte()
   // Kernel 7 x 7
   
   
   var glcm3 = glcmPrep.glcmTexture({
-    size:3,
+    size:3.5,
     kernel: ee.Kernel.square({
-    radius: 3, units: 'pixels', normalize: true})
+    radius: 3.5, units: 'pixels', normalize: true})
     
   })
   
@@ -830,7 +839,7 @@ var featColExport = sampled_points2.map(function (feature) {
 
 Export.table.toDrive({
   collection: featColExport,
-  description: outName,
+  description: outName+"_"dateToday,
   folder: outDir,
   fileFormat: 'CSV'
 });
