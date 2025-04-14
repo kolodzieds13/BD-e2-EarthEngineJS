@@ -507,6 +507,7 @@ var lsPrep_wIndicies = lsPrep
         .map(addLSDate)
         .map(getImagesLib.addSAVIandEVI)
         .map(getImagesLib.addTCAngles)
+        .int16()
 
 if (simpleLandsat){
   lsPrep_wIndicies=lsPrep_wIndicies.select(bandDictionary['reflectanceSimple'].add('lsDate')) //'lsDate'
@@ -643,7 +644,8 @@ if (addElevation){
 
 
   var foldedAspect = aspectRadians.subtract(ee.Number(4.3196899)).abs().multiply(ee.Number(-1)).add(PI).abs().rename('foldedAspect')
-  var theobaldHLI = (slopeRadians.cos().multiply(ee.Number(1.582)).multiply(ee.Number(0.82886954044))).subtract(foldedAspect.cos().multiply(ee.Number(1.5)).multiply(slopeRadians.sin().multiply(ee.Number(0.55944194062)))).subtract(slopeRadians.sin().multiply(ee.Number(0.262)).multiply(ee.Number(0.55944194062))).add(foldedAspect.sin().multiply(ee.Number(0.607)).multiply(slopeRadians.sin())).add(ee.Number(-1.467)).rename('HLI');
+  var theobaldHLI = (slopeRadians.cos().multiply(ee.Number(1.582)).multiply(ee.Number(0.82886954044))).subtract(foldedAspect.cos().multiply(ee.Number(1.5)).multiply(slopeRadians.sin().multiply(ee.Number(0.55944194062)))).subtract(slopeRadians.sin().multiply(ee.Number(0.262)).multiply(ee.Number(0.55944194062))).add(foldedAspect.sin().multiply(ee.Number(0.607)).multiply(slopeRadians.sin())).add(ee.Number(-1.467))
+    .rename('HLI');
   
   // Add Topographic Posidition Index
   var mean01 = srtm.focalMean(5.5, 'square');
@@ -654,9 +656,10 @@ if (addElevation){
   var tpi41 = srtm.subtract(mean03).rename("tpi41")
   
   // Stack Terrain Variables
-  var newTerrainVariable = srtm.addBands(slope).addBands(sinAspect).addBands(cosAspect)//.addBands(NorthnessExpo).addBands(EastnessExpo)
-    .addBands(tpi11).addBands(tpi21).addBands(tpi41).addBands(theobaldHLI)//.addBands(foldedAspect)
-  
+  var newTerrainVariable = srtm.addBands(slope.multiply(100)).addBands(sinAspect.multiply(10000)).addBands(cosAspect.multiply(10000))//.addBands(NorthnessExpo).addBands(EastnessExpo)
+    .addBands(tpi11.multiply(100)).addBands(tpi21.multiply(100)).addBands(tpi41.multiply(100)).addBands(theobaldHLI.multiply(10000))//.addBands(foldedAspect)
+    .int32()
+    
   gediMasterLS = gediMasterLS.addBands(newTerrainVariable)
 
 }
