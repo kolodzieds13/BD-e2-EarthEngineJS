@@ -49,11 +49,14 @@ var applyNDVIFilter = true
 var addElevation = true
 // Add GLCM Data:
 var addGLCM = false
-// If 'addTexture' what band?
+// If 'addGLCM' what band?
 var glcmBand = 'EVI'
 
-//Desired LandsatBands
-var simpleLandsat = false
+// Desired LandsatBands
+// If True, GEDI observation will only record values of blue,green,red,nir,swir1,swir2,NDVI,and EVI
+// This is ideal to minimize GEE computations
+// Select False to include all bands and indices (Band Dictionary located line XXX)
+var simpleLandsat = true
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
