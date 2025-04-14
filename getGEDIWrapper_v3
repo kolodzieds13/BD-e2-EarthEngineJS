@@ -735,7 +735,7 @@ if (addElevation){
   
   // Stack Terrain Variables
   var newTerrainVariable = srtm.addBands(slope).addBands(sinAspect).addBands(cosAspect)//.addBands(NorthnessExpo).addBands(EastnessExpo)
-    .addBands(tpi11).addBands(tpi21).addBands(tpi41).addBands(foldedAspect).addBands(theobaldHLI)
+    .addBands(tpi11).addBands(tpi21).addBands(tpi41).addBands(theobaldHLI)//.addBands(foldedAspect)
   
   gediMasterLS = gediMasterLS.addBands(newTerrainVariable)
 
