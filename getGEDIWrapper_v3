@@ -77,7 +77,7 @@ var imgTransform = [30,0,-2361915,0,-30,3177735]
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Name of CSV file
-var outName = 'GEDI_Landsat_Fusion_v18'
+var outName = 'GEDI_Landsat_Fusion_v20'
 // Name of Output Directory
 var outDir = "BDe2/tables"
 
@@ -291,7 +291,7 @@ gediMaster = gediMaster
           .float()
           // // .updateMask(GEDI_L4A.select('cover').mask()) //GEDI_L2B_Attribution.reduce('sum').gte(1))//
       })
-      .qualityMosaic('L2L4_dateDiff') // Review Later do i need quality mosaic()
+      .qualityMosaic('L2L4A_dateDiff') // Review Later do i need quality mosaic()
       // .first()
     return GEDI_L4A.addBands(GEDI_L2Coll_img)
 
@@ -695,14 +695,14 @@ if (addElevation){
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-if (addGLCM){
-  print("Adding "+glcmBand + " to Export")
+if (addGLCMEVI){
+  print("Adding EVI to Export")
   // Define a boxcar or low-pass kernel.
   var boxcar = ee.Kernel.square({
     radius: 2, units: 'pixels', normalize: true
   });
       
-  var glcmPrep = gediMasterLS.select(glcmBand)
+  var glcmPrep = gediMasterLS.select('EVI')
     .multiply(ee.Number(10000))
     .toInt16()
     .unitScale(-10000,10000)
@@ -792,7 +792,7 @@ var featColExport = sampled_points2.map(function (feature) {
   
   // Get both entries of coordinates and set them as new properties
   var resul = feature.set('lon', coordinates.get(0), 
-                    'lat', coordinates.get(1)),
+                    'lat', coordinates.get(1))
                     // 'uniqid'coordinates.get(0).add(coordinates.get(1)),
                     // 'zone',zone,
                     // 'tileID',IDs);
