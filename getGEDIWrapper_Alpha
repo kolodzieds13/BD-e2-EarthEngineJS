@@ -45,10 +45,10 @@ var solarElevThres = 0
 // then the results may not be consistent
 var applyNDVIFilter = false
 // Add SRTM Elevation Data
-var addElevation = false
+var addElevation = true
 // Add GLCM EVI Data:
 // This will add significant processing time!
-var addGLCMEVI = true
+var addGLCMEVI = false
 // If 'addGLCM' what band?
 // var glcmBand = 'EVI'
 
