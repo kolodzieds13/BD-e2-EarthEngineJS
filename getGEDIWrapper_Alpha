@@ -187,7 +187,16 @@ var bandDictionary = {
   "glcmOneThousand" : ee.List(["EVI_ent",]),
   
   "terrain100":ee.List(['slope','tpi11','tpi21','tpi41']),
-  "terrain10k":ee.List(["sinAspect",'cosAspect','HLI'])
+  "terrain10k":ee.List(["sinAspect",'cosAspect','HLI']),
+  
+  "gediAll":ee.List(['agbd','l4_quality_flag','l2_quality_flag','degrade_flag','delta_time','solar_elevation','beam','sensitivity',
+                    'rh25','rh50', 'rh75','rh95','rh98','digital_elevation_model','digital_elevation_model_srtm',
+                    'cover','pai']),
+  
+  "gediL4A":ee.List(['agbd','l4_quality_flag','l2_quality_flag','degrade_flag','delta_time','solar_elevation','beam','sensitivity']),
+  "gediL2A":ee.List(['delta_time','rh25','rh50', 'rh75','rh95','rh98','digital_elevation_model','digital_elevation_model_srtm']),
+  "gediL2B":ee.List(['delta_time','cover','pai']),
+  
 }
 
 
@@ -219,13 +228,13 @@ print('GEDI_L4A',GEDI_L4A.first())
 
 // Indicate Desired Bands
 
-var GEDI_L2A_Selection = ['delta_time','rh25','rh50', 'rh75','rh95','rh98','digital_elevation_model','digital_elevation_model_srtm']
-var GEDI_L2B_Selection = ['delta_time','cover','pai']
-var GEDI_L4A_Selection = ['master_frac','delta_time','agbd','l4_quality_flag','l2_quality_flag','degrade_flag','solar_elevation','beam','sensitivity']
+// var GEDI_L2A_Selection = ['delta_time','rh25','rh50', 'rh75','rh95','rh98','digital_elevation_model','digital_elevation_model_srtm']
+// var GEDI_L2B_Selection = ['delta_time','cover','pai']
+// var GEDI_L4A_Selection = ['delta_time','agbd','l4_quality_flag','l2_quality_flag','degrade_flag','solar_elevation','beam','sensitivity']
 
-var modL2A = GEDI_L2A.select(GEDI_L2A_Selection)
-var modL2B = GEDI_L2B.select(GEDI_L2B_Selection)
-GEDI_L4A = GEDI_L4A.select(GEDI_L4A_Selection)
+var modL2A = GEDI_L2A.select(bandDictionary['gediL2A'])
+var modL2B = GEDI_L2B.select(bandDictionary['gediL2B'])
+GEDI_L4A = GEDI_L4A.select(bandDictionary['gediL4A'])
 
 // https://gis.stackexchange.com/questions/376961/is-there-a-way-to-merge-imagecollections-in-earth-engine-without-the-systemind
 
@@ -726,7 +735,7 @@ if (addGLCMEVI){
   gediMasterLS = gediMasterLS.addBands(glcmDNB,null,true)
 }  
 
-
+var reorderBands = gediMasterLS.select(bandDictionary
 
 
 print(gediMasterLS.bandNames,"Final Band Names")
@@ -735,7 +744,7 @@ Map.addLayer(gediMasterLS,{},"with Landsat",false)
 
 //////////////////////////////////////////////////////////////////////
 //
-//             GEt Tabular Data
+//             Export Tabular Data
 //
 /////////////////////////////////////////////////////////////////////////
 
@@ -778,7 +787,7 @@ print(featColExport.first(),'First Sampled')
 
 Export.table.toDrive({
   collection: featColExport,
-  description: outName+"_"+dateToday,
+  description: outName+"_"startYear.toString()+"_"+dateToday,
   folder: outDir,
   fileFormat: 'CSV'
 });
