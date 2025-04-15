@@ -140,7 +140,7 @@ var addLSDate = function(im){
 };
 
 
-var applyGLCM = function(img){
+var applyGLCMEVI = function(img){
   var boxcar = ee.Kernel.square({
     radius: 2, units: 'pixels', normalize: true
   });
