@@ -36,13 +36,16 @@ var beamType = 'all'
 var solarElevThres = 0
 
 // Apply NDVI/Canopy Cover Filter
+// Warning: This technique calculate StDev on the fly and only within the AOI. If you need to split the aoi
+// then the results may not be consistent
 var applyNDVIFilter = false
 // Add SRTM Elevation Data
 var addElevation = true
-// Add GLCM Data:
-var addGLCM = false
+// Add GLCM EVI Data:
+// This will add significant processing time!
+var addGLCMEVI = false
 // If 'addGLCM' what band?
-var glcmBand = 'EVI'
+// var glcmBand = 'EVI'
 
 // Desired LandsatBands
 // If True, GEDI observation will only record values of blue,green,red,nir,swir1,swir2,NDVI,and EVI
@@ -169,14 +172,14 @@ var bandDictionary = {
                   "greenness","wetness","tcAngleBG","tcAngleGW","tcAngleBW","tcDistBG","tcDistGW","tcDistBW"]),
   "reflectanceSimple":ee.List(["blue","green","red","nir","swir1","swir2","NDVI","EVI"]),
   
-  "texture":ee.List(['_asm','_contrast','_corr','_var','_idm','_savg','_svar','_sent','_ent',
-            '_dvar','_dent','_imcorr1','_imcorr2',]),
+  "glcm":ee.List(['EVI_asm','EVI_contrast','EVI_corr','EVI_var','EVI_idm','EVI_savg','EVI_svar',
+                  'EVI_sent','EVI_ent','EVI_dvar','EVI_dent','EVI_imcorr1','EVI_imcorr2',]),
             
-  "texture10k":ee.List(["_asm","_idm","_corr","_sent","_dent","_imcorr1","_imcorr2"]),
-  "textureDN":  ee.List(["_contrast","_var","_svar","_savg","_dvar"]),
-  "textureOneThousand" : ee.List(["_ent",]),
+  "glcm10k":ee.List(["EVI_asm","EVI_idm","EVI_corr","EVI_sent","EVI_dent","EVI_imcorr1","EVI_imcorr2"]),
+  "glcmDN":  ee.List(["EVI_contrast","EVI_var","EVI_svar","EVI_savg","EVI_dvar"]),
+  "glcmOneThousand" : ee.List(["EVI_ent",]),
   
-  "terrain100":ee.List(['slopw','tpi11','tpi21','tpi41']),
+  "terrain100":ee.List(['slope','tpi11','tpi21','tpi41']),
   "terrain10k":ee.List(["sinAspect",'cosAspect','HLI'])
 }
 
@@ -581,7 +584,7 @@ var gediMasterLS = ee.ImageCollection( //gediMasterLandsatLCMS
 // Convert Collection to mosaic
 // This will select the pixel with the highest agbd if they overlap
 gediMasterLS = gediMasterLS.qualityMosaic('agbd').clip(Validation04)
-
+print(gediMasterLS)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -738,15 +741,31 @@ if (simpleLandsat){
   var optical=gediMasterLS.select(bandDictionary['reflectanceAll']).multiply(10000).int16() //'lsDate'
 }
 
-var terrain100B = gediMasterLS.select(bandDictionary['terrain100']).multiply(100).int16()
-var terrain10kB = gediMasterLS.select(bandDictionary['terrain10k']).multiply(10000).int16()
-
-
-
 gediMasterLS = gediMasterLS.addBands(optical,null,true)
 
-print(gediMasterLS,"gediMaster with Landsat")
-Map.addLayer(gediMasterLS,{},"with Landsat")
+if (addElevation){
+  var terrain100B = gediMasterLS.select(bandDictionary['terrain100']).multiply(100).int16()
+  var terrain10kB = gediMasterLS.select(bandDictionary['terrain10k']).multiply(10000).int16()
+  
+  gediMasterLS = gediMasterLS.addBands(terrain100B,null,true)
+  gediMasterLS = gediMasterLS.addBands(terrain10kB,null,true)
+}
+
+if (addGLCMEVI){
+  var glcm10kB = gediMasterLS.select(bandDictionary['glcm10kB']).multiply(10000).int16() 
+  var glcmOneThousandB = gediMasterLS.select(bandDictionary['glcmOneThousandB']).multiply(1000).int16()
+  var glcmDNB = gediMasterLS.select(bandDictionary['glcmDN']).int16()
+  
+  gediMasterLS = gediMasterLS.addBands(glcm10kB,null,true)
+  gediMasterLS = gediMasterLS.addBands(glcmOneThousandB,null,true)
+  gediMasterLS = gediMasterLS.addBands(glcmDNB,null,true)
+}  
+
+
+
+
+print(gediMasterLS.bandNames,"Final Band Names")
+Map.addLayer(gediMasterLS,{},"with Landsat",false)
 
 
 //////////////////////////////////////////////////////////////////////
