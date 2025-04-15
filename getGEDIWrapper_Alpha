@@ -159,7 +159,7 @@ var applyGLCMEVI = function(img){
     radius: 3, units: 'pixels', normalize: true})
   })
   
-  var glcm3_smooth = glcm3.convolve(boxcar); 
+  var glcm3_smooth = glcm3.convolve(boxcar).select(bandDictionary['glcm']); 
   return img.addBands(glcm3_smooth)
 }
 
