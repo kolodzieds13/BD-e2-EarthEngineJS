@@ -77,7 +77,7 @@ var imgTransform = [30,0,-2361915,0,-30,3177735]
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Name of CSV file
-var outName = 'GEDI_Landsat_Fusion_v20'
+var outName = 'GEDI_Landsat_Fusion_v24'
 // Name of Output Directory
 var outDir = "BDe2/tables"
 
@@ -145,8 +145,14 @@ var addLSDate = function(im){
   return im.addBands(doyBand);
 };
 
+var modMasterFrac = function(im){
+  var masterFracStr = im.select('master_frac').multiply(1000000000000000000).rename('masterFracStr')
+  return im.addBands(masterFracStr)
+}
 
-function addID(feature){
+
+
+var addID = function(feature){
   var lonInt = ee.Number(feature.geometry().coordinates().get(0))
     .abs().multiply(100000).round().long();
   var latInt = ee.Number(feature.geometry().coordinates().get(1))
@@ -214,7 +220,7 @@ print('GEDI_L4A',GEDI_L4A.first())
 
 var GEDI_L2A_Selection = ['delta_time','rh25','rh50', 'rh75','rh95','rh98','digital_elevation_model','digital_elevation_model_srtm']
 var GEDI_L2B_Selection = ['delta_time','cover','pai']
-var GEDI_L4A_Selection = ['delta_time','agbd','l4_quality_flag','l2_quality_flag','degrade_flag','solar_elevation','beam','sensitivity']
+var GEDI_L4A_Selection = ['master_frac','delta_time','agbd','l4_quality_flag','l2_quality_flag','degrade_flag','solar_elevation','beam','sensitivity']
 
 var modL2A = GEDI_L2A.select(GEDI_L2A_Selection)
 var modL2B = GEDI_L2B.select(GEDI_L2B_Selection)
@@ -305,7 +311,9 @@ finalGedi_v2 = finalGedi_v2.map(solarElevMask)
 finalGedi_v2 = finalGedi_v2.map(sensitivityMask)
 finalGedi_v2 = finalGedi_v2.map(beamFilter)
 finalGedi_v2 = finalGedi_v2.map(addDateGEDI)
-finalGedi_v2 = finalGedi_v2.map(preserveId)
+// finalGedi_v2 = finalGedi_v2.map(preserveId)
+finalGedi_v2 = finalGedi_v2.map(modMasterFrac)
+
 // finalGedi_v2 = finalGedi_v2.map(reprojectGEDI)
 
 print(finalGedi_v2,"gediMaster")
