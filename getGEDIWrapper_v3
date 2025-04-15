@@ -259,13 +259,13 @@ gediMaster = gediMaster
               .abs()
               .multiply(-1)
           )
-          .rename('quality') // -(number of days from the s2 image)
+          .rename('L2L4_dateDiff') // -(number of days from the s2 image)
         return GEDI_L2Coll_img
           .addBands(quality)
           .float()
           // // .updateMask(GEDI_L4A.select('cover').mask()) //GEDI_L2B_Attribution.reduce('sum').gte(1))//
       })
-      .qualityMosaic('quality') // Review Later do i need quality mosaic()
+      .qualityMosaic('L2L4_dateDiff') // Review Later do i need quality mosaic()
       // .first()
     return GEDI_L4A.addBands(GEDI_L2Coll_img)
 
