@@ -793,7 +793,7 @@ var featColExport = sampled_points2.map(function (feature) {
   // Get both entries of coordinates and set them as new properties
   var resul = feature.set('lon', coordinates.get(0), 
                     'lat', coordinates.get(1)),
-                    'uniqid'coordinates.get(0).add(coordinates.get(1)),
+                    // 'uniqid'coordinates.get(0).add(coordinates.get(1)),
                     // 'zone',zone,
                     // 'tileID',IDs);
   // Remove geometry                   
