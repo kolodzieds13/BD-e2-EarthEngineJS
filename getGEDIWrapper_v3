@@ -36,7 +36,7 @@ var beamType = 'all'
 var solarElevThres = 0
 
 // Apply NDVI/Canopy Cover Filter
-var applyNDVIFilter = true
+var applyNDVIFilter = false
 // Add SRTM Elevation Data
 var addElevation = true
 // Add GLCM Data:
@@ -58,8 +58,8 @@ var simpleLandsat = true
 
 var startJulian = 1
 var endJulian = 365
-var startYear = 2020
-var endYear= 2020
+var startYear = 2019
+var endYear= 2019
 
 var AOI = testAOI
 
@@ -74,7 +74,7 @@ var imgTransform = [30,0,-2361915,0,-30,3177735]
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Name of CSV file
-var outName = 'GEDI_Landsat_Fusion_v15'
+var outName = 'GEDI_Landsat_Fusion_v18'
 // Name of Output Directory
 var outDir = "BDe2/tables"
 
@@ -545,19 +545,21 @@ var gediMasterLS = ee.ImageCollection( //gediMasterLandsatLCMS
               .abs()
               .multiply(-1)
           )
-          .rename('quality') // -(number of days from the s2 image)
+          .rename('gediLS_dayDiff') // -(number of days from the s2 image)
         return gediMasterLS00
           .addBands(quality)
           .float()
           .updateMask(lsPrep_wIndicies.reduce('sum').gte(1))//.mask())
       })
-      .qualityMosaic('quality') 
+      .qualityMosaic('gediLS_dayDiff') 
       // .select(['agbd', 'solar_elevation','sensitivity','cover','shot_number_within_beam','elev_lowestmode','digital_elevation_model_srtm',
       //     'Change_Raw_Probability_Slow_Loss','Change_Raw_Probability_Fast_Loss','Change_Raw_Probability_Gain', 
       //     'Land_Cover_Raw_Probability_Trees','lcms_Stable','lcms_SlowLoss','lcms_fastLoss','lcms_Gain'])
     return lsPrep_wIndicies.addBands(gediMasterLS00)
       // .updateMask(gnnMask)
   })
+
+gediMasterLS = gediMasterLS.qualityMosaic('agbd').clip(Validation04)
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -568,7 +570,6 @@ var gediMasterLS = ee.ImageCollection( //gediMasterLandsatLCMS
 
 if (applyNDVIFilter){
   print("Applying NDVI + Canopy Cover Filter")
-  gediMasterLS = gediMasterLS.qualityMosaic('agbd').clip(Validation04)  
   
   var ndvi = gediMasterLS.select('NDVI')
   var cover = gediMasterLS.select('cover')
