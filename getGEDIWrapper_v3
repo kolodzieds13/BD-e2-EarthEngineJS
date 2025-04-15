@@ -142,6 +142,21 @@ var addLSDate = function(im){
   return im.addBands(doyBand);
 };
 
+
+function addID(feature){
+  var lonInt = ee.Number(feature.geometry().coordinates().get(0))
+    .abs().multiply(100000).round().long();
+  var latInt = ee.Number(feature.geometry().coordinates().get(1))
+    .abs().multiply(100000).round().long();
+  return feature.set('uniqid',latInt.add(lonInt))
+    // .set('lon',ee.Number(feature.geometry().coordinates().get(0)))
+    // .set('lat',ee.Number(feature.geometry().coordinates().get(1)))
+    // .set('Year',ee.Number(YEAR))
+    // .set('startMonth',ee.Number(startMonth))
+    // .set('endMonth',ee.Number(endMonth))
+    // .set('StartDate', ee.Number(feature.get('system:time_start')))
+}
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 //                Band Dictionary
@@ -755,9 +770,11 @@ var featColExport = sampled_points2.map(function (feature) {
   var coordinates = feature.geometry()
                           .transform(imgCRS)// <= Come Back
                           .coordinates();
+  
   // Get both entries of coordinates and set them as new properties
   var resul = feature.set('lon', coordinates.get(0), 
-                    'lat', coordinates.get(1))
+                    'lat', coordinates.get(1)),
+                    'uniqid'coordinates.get(0).add(coordinates.get(1)),
                     // 'zone',zone,
                     // 'tileID',IDs);
   // Remove geometry                   
