@@ -797,16 +797,27 @@ var featColExport = sampled_points2.map(function (feature) {
   var coordinates = feature.geometry()
                           .transform(imgCRS)// <= Come Back
                           .coordinates();
+                          
+  var lonInt=ee.Number(coordinates.get(0)).abs().int32() //A
+  var latInt=ee.Number(coordinates.get(1)).abs().int32()  //B
+  
+  var uniqid = ee.Number(10).pow((latInt.log10().add(1).int())).multiply(lonInt).add(latInt)
+  
+  
+  // var uniqid = feature.get('masterFrac').toDouble().format('%.18f')
   
   // Get both entries of coordinates and set them as new properties
   var resul = feature.set('lon', coordinates.get(0), 
-                    'lat', coordinates.get(1))
+                    'lat', coordinates.get(1),
+                    'uniqid',uniqid) //.format('%.18f')
                     // 'uniqid'coordinates.get(0).add(coordinates.get(1)),
                     // 'zone',zone,
                     // 'tileID',IDs);
   // Remove geometry                   
   return resul.setGeometry(null)
 })
+
+print(featColExport.first(),'First Sampled')
 
 Export.table.toDrive({
   collection: featColExport,
