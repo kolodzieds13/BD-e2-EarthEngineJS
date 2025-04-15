@@ -265,7 +265,7 @@ gediMaster = gediMaster
           .float()
           // // .updateMask(GEDI_L4A.select('cover').mask()) //GEDI_L2B_Attribution.reduce('sum').gte(1))//
       })
-      .qualityMosaic('L2L4A_dateDiff') // Review Later do i need quality mosaic()
+      .qualityMosaic('L2L4_dateDiff') // Review Later do i need quality mosaic()
       // .first()
     return GEDI_L4A.addBands(GEDI_L2Coll_img)
 
@@ -514,12 +514,8 @@ if (simpleLandsat){
   lsPrep_wIndicies=lsPrep_wIndicies.select(bandDictionary['reflectanceAll'].add('lsDate')) //'lsDate'
 }
 
-
-print(bandDictionary['reflectanceAll']+'lsDate')
-
 print("Landsat Band Names",lsPrep_wIndicies.first().bandNames())
 
-print(lsPrep_wIndicies.first().projection)
 
 
 //https://gis.stackexchange.com/questions/345962/create-paired-images-by-near-date
