@@ -4,6 +4,7 @@
 //
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+// Import AOI geometry. This could be an import shapefile.
 var testAOI = ee.Geometry.Polygon(
         [[[-124.1908214570261, 48.01747940426768],
           [-124.1908214570261, 47.88318938949384],
@@ -27,9 +28,13 @@ var dateToday = yearToday+monthToday+dayToday
 //
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-// Select GEDI sensitivity 
+// Select GEDI sensitivity
+// Higher Sensity equals greater variability in agbd.
+// 0.98 works best but 0.95 can also work
 var sensitivityThres = 0.98
 // Select Beam Type: Options are 'cover','power', or 'all
+// Power beams are 'stronger' and results in more accurate measurement. However, power beams
+// may be limited and thus it may be better to include all observations 'all'
 var beamType = 'all'
 // Select solor elevation threshold. Filter applies less than condition.
 // i.e. 0 indicated solar-elevation less than 0: indicated night time observation
@@ -66,8 +71,11 @@ var endYear= 2019
 
 var AOI = testAOI
 
+// Select Projection
 var imgCRS = 'EPSG:5070'
+// Select Scale: Desired resolution of data.
 var imgScale = null
+// Select Transform. Transform is used to ensure proper snapping to other datasets
 var imgTransform = [30,0,-2361915,0,-30,3177735]
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -77,7 +85,7 @@ var imgTransform = [30,0,-2361915,0,-30,3177735]
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Name of CSV file
-var outName = 'GEDI_Landsat_Fusion_v24'
+var outName = 'test_v1'
 // Name of Output Directory
 var outDir = "BDe2/tables"
 
@@ -200,15 +208,15 @@ var bandDictionary = {
 // Load Collections
 
 var GEDI_L2A = ee.ImageCollection('LARSE/GEDI/GEDI02_A_002_MONTHLY')
-  .filterBounds(testAOI)
+  .filterBounds(AOI)
   .filter(ee.Filter.calendarRange(startYear,endYear,'year'))
   .filter(ee.Filter.calendarRange(startJulian,endJulian))
 var GEDI_L2B = ee.ImageCollection('LARSE/GEDI/GEDI02_B_002_MONTHLY')
-  .filterBounds(testAOI)
+  .filterBounds(AOI)
   .filter(ee.Filter.calendarRange(startYear,endYear,'year'))
   .filter(ee.Filter.calendarRange(startJulian,endJulian))
 var GEDI_L4A = ee.ImageCollection('LARSE/GEDI/GEDI04_A_002_MONTHLY')
-  .filterBounds(testAOI)
+  .filterBounds(AOI)
   .filter(ee.Filter.calendarRange(startYear,endYear,'year'))
   .filter(ee.Filter.calendarRange(startJulian,endJulian))
 
@@ -351,9 +359,9 @@ var args = {};
 
 // Specify study area: Study area
 // Can be a featureCollection, feature, or geometry
-args.studyArea = testAOI//Kenobi_AOI//AOI;
+args.studyArea = AOI//Kenobi_AOI//AOI;
 
-var Validation04 = testAOI//Kenobi_AOI//AOI
+var Validation04 = AOI//Kenobi_AOI//AOI
 
 // Update the startJulian and endJulian variables to indicate your seasonal 
 // constraints. This supports wrapping for tropics and southern hemisphere.
@@ -786,7 +794,7 @@ Map.addLayer(gediMasterLS,{},"with Landsat",false)
 //Extracting values
 var sampled_points2 = gediMasterLS.sample({ //--> or should I use 'reduceRegions'? If that makes more sence, what would the code look like for  'reduceRegions'?
   region: AOI,
-  scale: 30,//imgScale,
+  // scale: 30,//imgScale,
   // crsTransform: imgTransform,
   projection: imgCRS,
   geometries: true
