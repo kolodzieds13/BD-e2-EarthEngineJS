@@ -131,6 +131,10 @@ var reprojectIMG = function(im){
   })
 }
 
+var castIMG = function(im){
+  return im.int16()
+}
+
 var addLSDate = function(im){
   var doy = im.date().format('YYYYMMdd');
   var doyBand = ee.Image.constant(ee.Number.parse(doy)).rename('lsDate').toInt()
@@ -149,12 +153,16 @@ var bandDictionary = {
   "reflectanceAll":ee.List(["blue","green","red","nir","swir1","swir2","NDVI","NIRv","NBR","NDMI","EVI","SAVI","brightness",
                   "greenness","wetness","tcAngleBG","tcAngleGW","tcAngleBW","tcDistBG","tcDistGW","tcDistBW"]),
   "reflectanceSimple":ee.List(["blue","green","red","nir","swir1","swir2","NDVI","EVI"]),
+  
   "texture":ee.List(['_asm','_contrast','_corr','_var','_idm','_savg','_svar','_sent','_ent',
             '_dvar','_dent','_imcorr1','_imcorr2',]),
             
-  "texture10000":ee.List(["_asm","_idm","_corr","_sent","_dent","_imcorr1","_imcorr2"]),
+  "texture10k":ee.List(["_asm","_idm","_corr","_sent","_dent","_imcorr1","_imcorr2"]),
   "textureDN":  ee.List(["_contrast","_var","_svar","_savg","_dvar"]),
   "textureOneThousand" : ee.List(["_ent",]),
+  
+  "terrain100":ee.List(['slopw','tpi11','tpi21','tpi41']),
+  "terrain10k":ee.List(["sinAspect",'cosAspect','HLI'])
 }
 
 
@@ -555,6 +563,8 @@ var gediMasterLS = ee.ImageCollection( //gediMasterLandsatLCMS
       // .updateMask(gnnMask)
   })
 
+// Convert Collection to mosaic
+// This will select the pixel with the highest agbd if they overlap
 gediMasterLS = gediMasterLS.qualityMosaic('agbd').clip(Validation04)
 
 
@@ -708,10 +718,15 @@ if (addGLCM){
 /////////////////////////////////////////////////////////////////////////
 
 if (simpleLandsat){
-  var optical=gediMasterLS.select(bandDictionary['reflectanceSimple']).multiply(10000) //'lsDate'
+  var optical=gediMasterLS.select(bandDictionary['reflectanceSimple']).multiply(10000).int16() //'lsDate'
 } else {
-  var optical=gediMasterLS.select(bandDictionary['reflectanceAll']).multiply(10000) //'lsDate'
+  var optical=gediMasterLS.select(bandDictionary['reflectanceAll']).multiply(10000).int16() //'lsDate'
 }
+
+var terrain100B = gediMasterLS.select(bandDictionary['terrain100']).multiply(100).int16()
+var terrain10kB = gediMasterLS.select(bandDictionary['terrain10k']).multiply(10000).int16()
+
+
 
 gediMasterLS = gediMasterLS.addBands(optical,null,true)
 
