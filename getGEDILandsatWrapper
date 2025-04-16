@@ -45,10 +45,10 @@ var solarElevThres = 0
 var applyNDVIFilter = false
 // Add SRTM Elevation Data
 // Generally recommended as elevation is often important when modeling agbd
-var addElevation = true
+var addElevation = false
 // Add GLCM EVI Data:
 // This will apply a GLCM analysis against "EVI" for all Landsat Images. Can be important but will add significant processing time!
-var addGLCMEVI = true
+var addGLCMEVI = false
 // If 'addGLCM' what band?
 // var glcmBand = 'EVI'
 
@@ -57,6 +57,9 @@ var addGLCMEVI = true
 // This is ideal to minimize GEE computations
 // Select False to include all bands and indices (Band Dictionary located line 150)
 var simpleLandsat = true
+// Add ESA Landcover
+var addESALandcover = true
+
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -705,6 +708,26 @@ if (addElevation){
   gediMasterLS = gediMasterLS.addBands(newTerrainVariable)
 
 }
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//                Add ESA Global Landcover 2023
+//
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+if (addESALandcover){
+  print('Adding ESA Global Landcover 2021 Landuse and Landcover')
+  // grab SRTM Data
+  
+  var esaLandcover = ee.ImageCollection('ESA/WorldCover/v200').first()
+  .select(['Map'],['esaLC_2021'])
+  
+
+  gediMasterLS = gediMasterLS.addBands(esaLandcover)
+
+}
+
+
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
