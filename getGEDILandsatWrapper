@@ -49,9 +49,6 @@ var addElevation = true
 // Add GLCM EVI Data:
 // This will apply a GLCM analysis against "EVI" for all Landsat Images. Can be important but will add significant processing time!
 var addGLCMEVI = true
-// If 'addGLCM' what band?
-// var glcmBand = 'EVI'
-
 // Desired LandsatBands
 // If True, GEDI observation will only record values of blue,green,red,nir,swir1,swir2,NDVI,and EVI
 // This is ideal to minimize GEE computations
