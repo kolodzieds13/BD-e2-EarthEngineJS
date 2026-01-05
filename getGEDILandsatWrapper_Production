@@ -4,6 +4,11 @@
 //
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+//
+var tiles = ee.Feature('projects/ee-kolodzieds13/assets/GEDI_EE_Kenobi_TileSchema_FINAL')
+
+
+
 // Import AOI geometry. This could be an import shapefile.
 var testAOI = ee.Geometry.Polygon(
         [[[-124.1908214570261, 48.01747940426768],
