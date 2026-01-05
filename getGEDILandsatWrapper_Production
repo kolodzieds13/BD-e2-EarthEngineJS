@@ -6,7 +6,7 @@
 
 //
 // var tiles = ee.Feature('projects/ee-kolodzieds13/assets/GEDI_EE_Kenobi_TileSchema_FINAL')
-var tiles = ee.FeatureCollection('projects/ee-kolodzieds13/assets/GEDI_EE_Kenobi_tileSchema_v5')
+var Kenobi_TileSchema_v5 = ee.FeatureCollection('projects/ee-kolodzieds13/assets/GEDI_EE_Kenobi_tileSchema_v5')
 
 var Kenobi_TileIDs =ee.List.sequence(0,47).getInfo() //0,47
 // var Kenobi_TileIDs =ee.List.sequence(0,37).getInfo() //0,47 For v10
@@ -19,17 +19,12 @@ print(Kenobi_TileIDs,"Kenobi_TileIDs")
 
 // var getImagesLib = require('users/Kolodzieds13/GEDI_Emerald_Edge_Analysis_Refresh:getImages_ArgusGeo');
 
-
-var KenobiOrder = Kenobi_TileIDs.map(function(IDs) {
-    
-  var tiles = Kenobi_TileSchema_v5.filter(ee.Filter.eq('zoneID',IDs))
-
 // Import AOI geometry. This could be an import shapefile.
-var testAOI = ee.Geometry.Polygon(
-        [[[-124.1908214570261, 48.01747940426768],
-          [-124.1908214570261, 47.88318938949384],
-          [-123.93401603710423, 47.88318938949384],
-          [-123.93401603710423, 48.01747940426768]]], null, false);
+// var testAOI = ee.Geometry.Polygon(
+//         [[[-124.1908214570261, 48.01747940426768],
+//           [-124.1908214570261, 47.88318938949384],
+//           [-123.93401603710423, 47.88318938949384],
+//           [-123.93401603710423, 48.01747940426768]]], null, false);
 
 
 
@@ -55,7 +50,7 @@ var sensitivityThres = 0.98
 // Select Beam Type: Options are 'cover','power', or 'all'
 // Power beams are 'stronger' and results in more accurate measurement. However, power beams
 // may be limited and thus it may be better to include all observations 'all'
-var beamType = 'all'
+var beamType = 'power'
 // Select solor elevation threshold. Filter applies less than condition.
 // i.e. 0 indicated solar-elevation less than 0; indicating night time observation
 var solarElevThres = 0
@@ -69,7 +64,7 @@ var applyNDVIFilter = false
 var addElevation = true
 // Add GLCM EVI Data:
 // This will apply a GLCM analysis against "EVI" for all Landsat Images. Can be important but will add significant processing time!
-var addGLCMEVI = true
+var addGLCMEVI = false
 // Desired LandsatBands
 // If True, GEDI observation will only record values of blue,green,red,nir,swir1,swir2,NDVI,and EVI
 // This is ideal to minimize GEE computations
@@ -77,7 +72,7 @@ var addGLCMEVI = true
 var simpleLandsat = true
 // Add ESA Landcover
 // This adds ESA World Cover 2021 v200. 
-var addESALandcover = true
+var addESALandcover = false
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -85,7 +80,9 @@ var addESALandcover = true
 //                Image Parameters Data
 //
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
+var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
+ 
+  
   // Select Start and End Days (in Julian Days)
   var startJulian = 1
   var endJulian = 365
@@ -97,7 +94,7 @@ var addESALandcover = true
   
   // Define Area of Interest (AOI)
   // This may need to be broken up if area is too large
-  var AOI = testAOI
+  var AOI = Kenobi_TileSchema_v5.filter(ee.Filter.eq('zoneID',IDs))
   
   // Select Projection
   var imgCRS = 'EPSG:5070'
@@ -842,4 +839,4 @@ var addESALandcover = true
   });
 
 
-
+})
