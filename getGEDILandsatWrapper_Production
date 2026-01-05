@@ -7,7 +7,21 @@
 //
 var tiles = ee.Feature('projects/ee-kolodzieds13/assets/GEDI_EE_Kenobi_TileSchema_FINAL')
 
+var Kenobi_TileIDs =ee.List.sequence(0,47).getInfo() //0,47
+// var Kenobi_TileIDs =ee.List.sequence(0,37).getInfo() //0,47 For v10
+// var Kenobi_TileIDs =[6,7,31,32]
+// var Kenobi_TileIDs =[111]
 
+// var Kenobi_TileIDs =ee.List.sequence(100,125).getInfo()
+
+print(Kenobi_TileIDs,"Kenobi_TileIDs")
+
+// var getImagesLib = require('users/Kolodzieds13/GEDI_Emerald_Edge_Analysis_Refresh:getImages_ArgusGeo');
+
+
+var KenobiOrder = Kenobi_TileIDs.map(function(IDs) {
+    
+  var tiles = Kenobi_TileSchema_v5.filter(ee.Filter.eq('zoneID',IDs))
 
 // Import AOI geometry. This could be an import shapefile.
 var testAOI = ee.Geometry.Polygon(
