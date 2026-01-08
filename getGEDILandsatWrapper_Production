@@ -8,7 +8,7 @@
 // var tiles = ee.Feature('projects/ee-kolodzieds13/assets/GEDI_EE_Kenobi_TileSchema_FINAL')
 var Kenobi_TileSchema_v5 = ee.FeatureCollection('projects/ee-kolodzieds13/assets/GEDI_EE_Kenobi_tileSchema_v5')
 
-var Kenobi_TileIDs =ee.List.sequence(18,19).getInfo() //0,47
+var Kenobi_TileIDs =ee.List.sequence(13,13).getInfo() //0,47
 // var Kenobi_TileIDs =ee.List.sequence(0,37).getInfo() //0,47 For v10
 // var Kenobi_TileIDs =[6,7,31,32]
 // var Kenobi_TileIDs =[111]
@@ -50,7 +50,7 @@ var sensitivityThres = 0.98
 // Select Beam Type: Options are 'cover','power', or 'all'
 // Power beams are 'stronger' and results in more accurate measurement. However, power beams
 // may be limited and thus it may be better to include all observations 'all'
-var beamType = 'power'
+var beamType = 'all'
 // Select solor elevation threshold. Filter applies less than condition.
 // i.e. 0 indicated solar-elevation less than 0; indicating night time observation
 var solarElevThres = 0
@@ -97,11 +97,11 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
   var AOI = Kenobi_TileSchema_v5.filter(ee.Filter.eq('zoneID',IDs))
   
   // Select Projection
-  var imgCRS = 'EPSG:4289' //5070
+  var imgCRS = 'EPSG:32610' //5070
   // Select Scale: Desired resolution of data.
-  var imgScale = 30
+  var imgScale = null
   // Select Transform. Transform is used to ensure proper snapping to other datasets
-  var imgTransform = null//[30,0,-2361915,0,-30,3177735]
+  var imgTransform = [30,0,-2361915,0,-30,3177735]
   
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   //
