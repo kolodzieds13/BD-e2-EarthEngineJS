@@ -101,7 +101,7 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
   // Select Scale: Desired resolution of data.
   var imgScale = null
   // Select Transform. Transform is used to ensure proper snapping to other datasets
-  var imgTransform = [30,0,-2361915,0,-30,3177735]
+  var imgTransform = [25, 0, 248650, 0, -25, 5323275]//[30,0,-2361915,0,-30,3177735]
   
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   //
@@ -792,7 +792,7 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
   //Extracting values
   var sampled_points2 = gediMasterLS.sample({ //--> or should I use 'reduceRegions'? If that makes more sence, what would the code look like for  'reduceRegions'?
     region: AOI,
-    scale: 30,//imgScale,
+    scale: 25,//imgScale,
     // crsTransform: imgTransform,
     projection: imgCRS,
     geometries: true
