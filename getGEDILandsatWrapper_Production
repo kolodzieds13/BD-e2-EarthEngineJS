@@ -97,7 +97,7 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
   var AOI = Kenobi_TileSchema_v5.filter(ee.Filter.eq('zoneID',IDs))
   
   // Select Projection
-  var imgCRS = 'EPSG:32610' //5070
+  var imgCRS = 'EPSG:32610' //5070 / 32610
   // Select Scale: Desired resolution of data.
   var imgScale = null
   // Select Transform. Transform is used to ensure proper snapping to other datasets
