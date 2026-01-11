@@ -8,7 +8,7 @@
 // var tiles = ee.Feature('projects/ee-kolodzieds13/assets/GEDI_EE_Kenobi_TileSchema_FINAL')
 var Kenobi_TileSchema_v5 = ee.FeatureCollection('projects/ee-kolodzieds13/assets/GEDI_EE_Kenobi_tileSchema_v5')
 
-var Kenobi_TileIDs =ee.List.sequence(2,47).getInfo() //0,47
+var Kenobi_TileIDs =ee.List.sequence(2,2).getInfo() //0,47
 // var Kenobi_TileIDs =ee.List.sequence(0,37).getInfo() //0,47 For v10
 // var Kenobi_TileIDs =[6,7,31,32]
 // var Kenobi_TileIDs =[111]
@@ -73,6 +73,12 @@ var simpleLandsat = true
 // Add ESA Landcover
 // This adds ESA World Cover 2021 v200. 
 var addESALandcover = true
+// Add ESA Forest Types 2019
+var addJRCGlobalForestTypes = true
+// Add Hansen Tree Loss
+// This adds hansen tree loss information. 
+var addHansenTreeLoss = true
+
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -740,11 +746,48 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
     
     var esaLandcover = ee.ImageCollection('ESA/WorldCover/v200').first()
     .select(['Map'],['lcESA_2021'])
+    .unmask(9999)
     
   
     gediMasterLS = gediMasterLS.addBands(esaLandcover)
   
   }
+  
+  ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  //
+  //                Add Hansen Global Tree Loss
+  //
+  ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  
+  if (addHansenTreeLoss){
+    print('Adding Hansen Tree Loss')
+    // grab SRTM Data
+    
+    var hansenTreeLoss = ee.Image('UMD/hansen/global_forest_change_2024_v1_12')
+    .select(['lossyear','loss','gain'],['hansenLossYr','hansenLoss','hansenGain'])
+    .unmask(9999)
+    
+  
+    gediMasterLS = gediMasterLS.addBands(hansenTreeLoss)
+  
+  }
+  
+  ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  //
+  //                Add Global Forest Types
+  //
+  ///////////////////////////////////////////////////////////////////////////////////////////////////////
+  
+  if (addJRCGlobalForestTypes){
+    print('Adding Hansen Tree Loss')
+    var GFT2020 = ee.ImageCollection('JRC/GFC2020_subtypes/V0').mosaic()
+    .rename('JRC_GFT_2020')
+    .unmask(9999)
+    
+    gediMasterLS = gediMasterLS.addBands(GFT2020)
+  
+  }
+  
   
   
   
