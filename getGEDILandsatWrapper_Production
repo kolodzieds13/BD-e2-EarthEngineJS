@@ -8,7 +8,7 @@
 // var tiles = ee.Feature('projects/ee-kolodzieds13/assets/GEDI_EE_Kenobi_TileSchema_FINAL')
 var Kenobi_TileSchema_v5 = ee.FeatureCollection('projects/ee-kolodzieds13/assets/GEDI_EE_Kenobi_tileSchema_v5')
 
-var Kenobi_TileIDs =ee.List.sequence(0,47).getInfo() //0,47
+var Kenobi_TileIDs =ee.List.sequence(2,47).getInfo() //0,47
 // var Kenobi_TileIDs =ee.List.sequence(0,37).getInfo() //0,47 For v10
 // var Kenobi_TileIDs =[6,7,31,32]
 // var Kenobi_TileIDs =[111]
@@ -72,7 +72,7 @@ var addGLCMEVI = false
 var simpleLandsat = true
 // Add ESA Landcover
 // This adds ESA World Cover 2021 v200. 
-var addESALandcover = false
+var addESALandcover = true
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -89,8 +89,8 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
   // Select Start and End Years
   // Note: GEDI Observation are avaliable from 2019 through 2023
   // Year 2023 only has data till March: endJulian no later than 91
-  var startYear = 2021
-  var endYear= 2021
+  var startYear = 2019
+  var endYear= 2019
   
   // Define Area of Interest (AOI)
   // This may need to be broken up if area is too large
@@ -112,7 +112,7 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
   // Name of Output CSV file
   var outName = 'GEDI_Landsat_Fusion'
   // Name of Output Directory
-  var outDir = "BDe2/tables/se/update" //This must be created in Google Drive
+  var outDir = "BDe2/tables/se/eviTexture" //This must be created in Google Drive
   
   
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -214,11 +214,14 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
     "terrain100":ee.List(['slope','tpi11','tpi21','tpi41']),
     "terrain10k":ee.List(["sinAspect",'cosAspect','HLI']),
     
-    "gediAll":ee.List(['agbd','agbd_se','l4_quality_flag','l2_quality_flag','degrade_flag','delta_time','solar_elevation','beam','sensitivity',
+    "gediAll":ee.List(['agbd','agbd_pi_lower','agbd_pi_upper','agbd_se','agbd_t','agbd_t_se',
+                      'l4_quality_flag','l2_quality_flag','degrade_flag','delta_time','solar_elevation','beam','sensitivity',
                       'rh25','rh50', 'rh75','rh95','rh98','digital_elevation_model','digital_elevation_model_srtm',
                       'cover','pai']),
     
-    "gediL4A":ee.List(['agbd','agbd_se','l4_quality_flag','l2_quality_flag','degrade_flag','delta_time','solar_elevation','beam','sensitivity']),
+    "gediL4A":ee.List(['agbd','agbd_pi_lower','agbd_pi_upper','agbd_se','agbd_t','agbd_t_se',
+                      'l4_quality_flag','l2_quality_flag','degrade_flag','delta_time',
+                      'solar_elevation','beam','sensitivity']),
     "gediL2A":ee.List(['delta_time','rh25','rh50', 'rh75','rh95','rh98','elev_lowestmode','digital_elevation_model','digital_elevation_model_srtm']),
     "gediL2B":ee.List(['delta_time','cover','pai']),
     
@@ -650,7 +653,7 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
     
     var ndvi = gediMasterLS.select('NDVI')
     var cover = gediMasterLS.select('cover')
-    
+    //Get Adbsolute Difference
     var geoDiffNDVIprepped = (cover.subtract(ndvi)).abs().rename('geoDiff')
     
     var reducers = ee.Reducer.mean().combine({
