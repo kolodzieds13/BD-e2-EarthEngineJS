@@ -74,6 +74,10 @@ var simpleLandsat = true
 // This adds ESA World Cover 2021 v200. 
 var addESALandcover = true
 // Add ESA Forest Types 2019
+// Add Forest Types (e.g Broadleave Needle)
+var addESAForestTypes = true
+// Add JRC Broad Forest Types
+// This will add Primary Forest, Regen Forest, Plantation, Forest
 var addJRCGlobalForestTypes = true
 // Add Hansen Tree Loss
 // This adds hansen tree loss information. 
@@ -753,6 +757,42 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
   
   }
   
+  
+  ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  //
+  //                Add Hansen Global Tree Loss
+  //
+  ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  
+  if (addESAForestTypes){
+    print('Adding ESA Forest Types')
+    // grab SRTM Data
+    
+    var esaForestType = ee.Image('COPERNICUS/Landcover/100m/Proba-V-C3/Global/2019')
+    .select(['forest_type'],['ESAForestType2019'])
+    .unmask(9999)
+    
+  
+    gediMasterLS = gediMasterLS.addBands(esaForestType)
+  
+  }
+  
+  ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  //
+  //                Add Global Forest Types
+  //
+  ///////////////////////////////////////////////////////////////////////////////////////////////////////
+  
+  if (addJRCGlobalForestTypes){
+    print('Adding JRC Global Forest Types')
+    var GFT2020 = ee.ImageCollection('JRC/GFC2020_subtypes/V0').mosaic()
+    .rename('JRC_GFT_2020')
+    .unmask(9999)
+    
+    gediMasterLS = gediMasterLS.addBands(GFT2020)
+  
+  }
+  
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   //
   //                Add Hansen Global Tree Loss
@@ -769,22 +809,6 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
     
   
     gediMasterLS = gediMasterLS.addBands(hansenTreeLoss)
-  
-  }
-  
-  ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  //
-  //                Add Global Forest Types
-  //
-  ///////////////////////////////////////////////////////////////////////////////////////////////////////
-  
-  if (addJRCGlobalForestTypes){
-    print('Adding Hansen Tree Loss')
-    var GFT2020 = ee.ImageCollection('JRC/GFC2020_subtypes/V0').mosaic()
-    .rename('JRC_GFT_2020')
-    .unmask(9999)
-    
-    gediMasterLS = gediMasterLS.addBands(GFT2020)
   
   }
   
