@@ -64,7 +64,7 @@ var applyNDVIFilter = false
 var addElevation = true
 // Add GLCM EVI Data:
 // This will apply a GLCM analysis against "EVI" for all Landsat Images. Can be important but will add significant processing time!
-var addGLCMEVI = false
+var addGLCMEVI = true
 // Desired LandsatBands
 // If True, GEDI observation will only record values of blue,green,red,nir,swir1,swir2,NDVI,and EVI
 // This is ideal to minimize GEE computations
@@ -112,7 +112,7 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
   // Name of Output CSV file
   var outName = 'GEDI_Landsat_Fusion'
   // Name of Output Directory
-  var outDir = "BDe2/tables/se/eviTexture" //This must be created in Google Drive
+  var outDir = "BDe2_Alpha" //This must be created in Google Drive
   
   
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -539,7 +539,7 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
   // If method other than 'near' is chosen, any map drawn on the fly that is not
   // reprojected, will appear blurred
   // Use .reproject to view the actual resulting image (this will slow it down)
-  args.resampleMethod = 'bicubic';
+  args.resampleMethod = 'near'//'bicubic';
   
   // If available, bring in preComputed cloudScore offsets and TDOM stats
   // Set to null if computing on-the-fly is wanted
