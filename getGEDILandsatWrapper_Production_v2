@@ -126,7 +126,7 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
   // Name of Output CSV file
   var outName = 'GEDI_Landsat_Fusion'
   // Name of Output Directory
-  var outDir = "BDe2_Alpha" //This must be created in Google Drive
+  var outDir = "BDe2_Beta" //This must be created in Google Drive
   
   
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -270,19 +270,22 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
                     "greenness","wetness","tcAngleBG","tcAngleGW","tcAngleBW","tcDistBG","tcDistGW","tcDistBW"]),
     "reflectanceSimple":ee.List(["blue","green","red","nir","swir1","swir2","NDVI","EVI","NBR"]), // New add 20260112
     
-    // "glcm":ee.List(['EVI_asm','EVI_contrast','EVI_corr','EVI_var','EVI_idm','EVI_savg','EVI_svar',
-    //                 'EVI_sent','EVI_ent','EVI_dvar','EVI_dent','EVI_imcorr1','EVI_imcorr2',]),
+    "glcm":ee.List(['EVI_asm','EVI_contrast','EVI_corr','EVI_var','EVI_idm','EVI_savg','EVI_svar',
+                    'EVI_sent','EVI_ent','EVI_dvar','EVI_dent','EVI_imcorr1','EVI_imcorr2',]),
               
-    // "glcm10k":ee.List(["EVI_asm","EVI_idm","EVI_corr","EVI_sent","EVI_dent","EVI_imcorr1","EVI_imcorr2"]),
-    // "glcmDN":  ee.List(["EVI_contrast","EVI_var","EVI_svar","EVI_savg","EVI_dvar"]),
-    // "glcmOneThousand" : ee.List(["EVI_ent",]),
+    "glcm10k":ee.List(["EVI_asm","EVI_idm","EVI_corr","EVI_sent","EVI_dent","EVI_imcorr1","EVI_imcorr2"]),
+    "glcmDN":  ee.List(["EVI_contrast","EVI_var","EVI_svar","EVI_savg","EVI_dvar"]),
+    "glcmOneThousand" : ee.List(["EVI_ent",]),
     
     "glcmNIR":ee.List(['NBR_var']),
+    "glcmNIRDN":ee.List(['NBR_var']),
+    
+    
     "glcmSWIR1":ee.List(['SWIR1_contrast']),
+    "glcmSWIR1DN":ee.List(['SWIR1_contrast']),
+    
+    
               
-    "glcm10k":ee.List(["NBR_asm","NBR_idm","NBR_corr","NBR_sent","NBR_dent","NBR_imcorr1","NBR_imcorr2"]),
-    "glcmDN":  ee.List(["NBR_contrast","NBR_var","NBR_svar","NBR_savg","NBR_dvar"]),
-    "glcmOneThousand" : ee.List(["NBR_ent",]),
     
     
     
@@ -673,6 +676,30 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
   }
   print("Landsat Band Names",lsPrep_wIndicies.first().bandNames())
   
+  //////////////////////////////////////////////////////////////////
+  //
+  //             Add NIR GLCM
+  //
+  /////////////////////////////////////////////////////////////////
+  
+  
+  if (addGLCMvarNIR){
+    lsPrep_wIndicies = lsPrep_wIndicies.map(applyGLCMvarNIR)
+  }
+  print("Landsat Band Names",lsPrep_wIndicies.first().bandNames())
+  
+  //////////////////////////////////////////////////////////////////
+  //
+  //             Add SWIR1 GLCM
+  //
+  /////////////////////////////////////////////////////////////////
+  
+  
+  if (addGLCMconSWIR1){
+    lsPrep_wIndicies = lsPrep_wIndicies.map(applyGLCMconSWIR1)
+  }
+  print("Landsat Band Names",lsPrep_wIndicies.first().bandNames())
+  
   
   //////////////////////////////////////////////////////////////////
   //
@@ -911,6 +938,16 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
     
     gediMasterLS = gediMasterLS.addBands(glcm10kB,null,true)
     gediMasterLS = gediMasterLS.addBands(glcmOneThousandB,null,true)
+    gediMasterLS = gediMasterLS.addBands(glcmDNB,null,true)
+  }  
+  
+  if (addGLCMvarNIR){
+    var glcmDNB = gediMasterLS.select(bandDictionary['glcmNIRDN']).int16()
+    gediMasterLS = gediMasterLS.addBands(glcmDNB,null,true)
+  }
+  
+  if (addGLCMconSWIR1){
+    var glcmDNB = gediMasterLS.select(bandDictionary['glcmSWIR1DN']).int16()
     gediMasterLS = gediMasterLS.addBands(glcmDNB,null,true)
   }  
   
