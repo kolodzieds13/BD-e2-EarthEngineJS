@@ -923,14 +923,17 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
     var cti = ee.ImageCollection("projects/sat-io/open-datasets/HYDROGRAPHY90/flow_index/cti")
     .filterBounds(AOI)
     .mosaic()
+    .resample("bicubic")
     .rename('cti')
     var spi = ee.ImageCollection("projects/sat-io/open-datasets/HYDROGRAPHY90/flow_index/spi")
     .filterBounds(AOI)
     .mosaic()
+    .resample("bicubic")
     .rename('spi')
     var sti = ee.ImageCollection("projects/sat-io/open-datasets/HYDROGRAPHY90/flow_index/sti")
     .filterBounds(AOI)
     .mosaic()
+    .resample("bicubic")
     .rename('sti')
     
   
@@ -951,15 +954,18 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
     var hand30_100 = ee.ImageCollection("users/gena/global-hand/hand-100")
     .filterBounds(AOI)
     .mosaic()
+    .resample("bicubic")
     .rename('hand30_100m')
     var hand30_1000 = ee.Image("users/gena/GlobalHAND/30m/hand-1000")
+    .resample("bicubic")
     .rename('hand30_1k')
     var hand90_1000 = ee.Image("users/gena/GlobalHAND/90m-global/hand-1000")
+    .resample("bicubic")
     .rename('hand90_1k')
     
     gediMasterLS = gediMasterLS.addBands(hand30_100).addBands(hand30_1000).addBands(hand90_1000)
   
-  
+  }
   
   
   
