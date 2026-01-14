@@ -130,7 +130,7 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
   // Name of Output CSV file
   var outName = 'GEDI_Landsat_Fusion'
   // Name of Output Directory
-  var outDir = "BDe2_Beta" //This must be created in Google Drive
+  var outDir = "BDe2_Gamma" //This must be created in Google Drive
   
   
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
