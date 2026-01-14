@@ -914,7 +914,7 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
   
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   //
-  //                Add Hansen Global Tree Loss
+  //                Add Flow Index
   //
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   
@@ -939,6 +939,27 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
     gediMasterLS = gediMasterLS.addBands(cti).addBands(spi).addBands(sti)
   
   }
+  
+  ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  //
+  //                Add Height Above Nearest Drainage (HAND) Hydrology
+  //
+  ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  
+  if (addHANDHydro){
+    print('Adding Height Above Nearest Drainage (HAND) Hydrology')
+    // grab SRTM Data
+    
+    var hand30_100 = ee.ImageCollection("users/gena/global-hand/hand-100")
+    .filterBounds(AOI)
+    .mosaic()
+    .rename('hand30_100m')
+    var hand30_1000 = ee.Image("users/gena/GlobalHAND/30m/hand-1000")
+    .rename('hand30_1k')
+    var hand90_1000 = ee.Image("users/gena/GlobalHAND/90m-global/hand-1000")
+    .rename('hand90_1k')
+    
+    gediMasterLS = gediMasterLS.addBands(hand30_100).addBands(hand30_1000).addBands(hand90_1000)
   
   
   
