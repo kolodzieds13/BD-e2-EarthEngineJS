@@ -87,6 +87,12 @@ var addJRCGlobalForestTypes = true
 // This adds hansen tree loss information. 
 var addHansenTreeLoss = true
 
+// Add HAND Hydrology
+var addHANDHydro = true
+
+// Add Flow Index
+var addFlowIndex = true
+
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -904,6 +910,39 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
     gediMasterLS = gediMasterLS.addBands(hansenTreeLoss)
   
   }
+  
+  
+  ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  //
+  //                Add Hansen Global Tree Loss
+  //
+  ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  
+  if (addFlowIndex){
+    print('Adding Flow Index')
+    // grab SRTM Data
+    
+    var cti = ee.ImageCollection("projects/sat-io/open-datasets/HYDROGRAPHY90/flow_index/cti")
+    .filterBounds(AOI)
+    .mosaic()
+    .rename('cti')
+    var spi = ee.ImageCollection("projects/sat-io/open-datasets/HYDROGRAPHY90/flow_index/spi")
+    .filterBounds(AOI)
+    .mosaic()
+    .rename('spi')
+    var sti = ee.ImageCollection("projects/sat-io/open-datasets/HYDROGRAPHY90/flow_index/sti")
+    .filterBounds(AOI)
+    .mosaic()
+    .rename('sti')
+    
+  
+    gediMasterLS = gediMasterLS.addBands(cti).addBands(spi).addBands(sti)
+  
+  }
+  
+  
+  
+  
   
   
   
