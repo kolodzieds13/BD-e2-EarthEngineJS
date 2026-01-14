@@ -86,10 +86,8 @@ var addJRCGlobalForestTypes = true
 // Add Hansen Tree Loss
 // This adds hansen tree loss information. 
 var addHansenTreeLoss = true
-
 // Add HAND Hydrology
 var addHANDHydro = true
-
 // Add Flow Index
 var addFlowIndex = true
 
