@@ -751,8 +751,8 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
           return gediMasterLS00
             .addBands(quality)
             .float()
-            .updateMask(lsPrep_wIndicies.reduce('sum').gte(1))//.mask())
-            // .updateMask(lsPrep_wIndicies.mask())//.mask()) // Comeback 20260115
+            // .updateMask(lsPrep_wIndicies.reduce('sum').gte(1))//.mask())
+            .updateMask(lsPrep_wIndicies.select('blue').mask())//.mask()) // Comeback 20260115
         })
         .qualityMosaic('gediLS_dayDiff') 
       return lsPrep_wIndicies.addBands(gediMasterLS00)
