@@ -8,7 +8,7 @@
 // var tiles = ee.Feature('projects/ee-kolodzieds13/assets/GEDI_EE_Kenobi_TileSchema_FINAL')
 var Kenobi_TileSchema_v5 = ee.FeatureCollection('projects/ee-kolodzieds13/assets/GEDI_EE_Kenobi_tileSchema_v5')
 
-var Kenobi_TileIDs =ee.List.sequence(0,47).getInfo() //0,47
+var Kenobi_TileIDs =ee.List.sequence(13,13).getInfo() //0,47
 // var Kenobi_TileIDs =ee.List.sequence(0,37).getInfo() //0,47 For v10
 // var Kenobi_TileIDs =[6,7,31,32]
 // var Kenobi_TileIDs =[111]
