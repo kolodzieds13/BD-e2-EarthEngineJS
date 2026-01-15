@@ -662,9 +662,9 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
           .map(getImagesLib.addTCAngles)
   
   if (simpleLandsat){
-    lsPrep_wIndicies=lsPrep_wIndicies.select(bandDictionary['reflectanceSimple'])//.add('lsDate')) //'lsDate'
+    lsPrep_wIndicies=lsPrep_wIndicies.select(bandDictionary['reflectanceSimple'].add('lsDate')) //'lsDate'
   } else {
-    lsPrep_wIndicies=lsPrep_wIndicies.select(bandDictionary['reflectanceAll'])//.add('lsDate')) //'lsDate'
+    lsPrep_wIndicies=lsPrep_wIndicies.select(bandDictionary['reflectanceAll'].add('lsDate')) //'lsDate'
   }
   
   getImagesLib.exportToDriveWrapper(
@@ -718,50 +718,102 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
   print("Landsat Band Names",lsPrep_wIndicies.first().bandNames())
   
   
-  //////////////////////////////////////////////////////////////////
+  // //////////////////////////////////////////////////////////////////
+  // //
+  // //             GEDI + Landsat Fusion
+  // //
+  // /////////////////////////////////////////////////////////////////
+  
+  
+  // //https://gis.stackexchange.com/questions/345962/create-paired-images-by-near-date
+  
+  // var gediMasterLS = ee.ImageCollection( //gediMasterLandsatLCMS
+  //   ee.Join.saveAll({matchesKey: 'gedi'})
+  //     .apply({ 
+  //       primary: lsPrep_wIndicies, 
+  //       secondary: finalGedi_v2, 
+  //       condition: ee.Filter.and(maxDiffFilter, intersects)
+  //     })
+  //   )
+  //   // Add the s1 band (a mosaic from the pixels closest to the s2 image)
+  //   .map(function (lsPrep_wIndicies) {
+  //     var gediMasterLS00 = ee.ImageCollection.fromImages(
+  //         ee.List(lsPrep_wIndicies.get('gedi'))
+  //       )
+  //       .map(function (gediMasterLS00) {
+  //         var quality = ee.Image(
+  //             gediMasterLS00.date()
+  //               .difference(lsPrep_wIndicies.date(), 'day')
+  //               .abs()
+  //               .multiply(-1)
+  //           )
+  //           .rename('gediLS_dayDiff') // -(number of days from the s2 image)
+  //         return gediMasterLS00
+  //           .addBands(quality)
+  //           .float()
+  //           // .updateMask(lsPrep_wIndicies.select(['blue','green','red','nir','swir1','swir2']).reduce('sum').gte(1))//.mask())
+  //           // .updateMask(lsPrep_wIndicies.select('blue').mask())//.mask()) // Comeback 20260115
+  //       })
+  //       .qualityMosaic('gediLS_dayDiff') 
+  //     return lsPrep_wIndicies.addBands(gediMasterLS00)
+  //   })
+  // print(gediMasterLS," >>>>>> gediMasterLS Joined")
+  // // Convert Collection to mosaic
+  // // This will select the pixel with the highest agbd if they overlap
+  // gediMasterLS = gediMasterLS.qualityMosaic('agbd').clip(Validation04)
+  // print(gediMasterLS," >>>>>> gediMasterLS Joined Quality Mosaic AGDB")
+  
+  // Map.addLayer(gediMasterLS,{},"gediMasterLS CHECK")
+  
+    //////////////////////////////////////////////////////////////////
   //
-  //             GEDI + Landsat Fusion
+  //             GEDI + Landsat Fusion Flipped
   //
   /////////////////////////////////////////////////////////////////
   
   
   //https://gis.stackexchange.com/questions/345962/create-paired-images-by-near-date
-  
+  // Add the landsatBands to the gedi band
   var gediMasterLS = ee.ImageCollection( //gediMasterLandsatLCMS
     ee.Join.saveAll({matchesKey: 'gedi'})
       .apply({ 
-        primary: lsPrep_wIndicies, 
-        secondary: finalGedi_v2, 
+        primary: finalGedi_v2,//lsPrep_wIndicies, 
+        secondary: lsPrep_wIndicies,//finalGedi_v2, 
         condition: ee.Filter.and(maxDiffFilter, intersects)
       })
     )
     // Add the s1 band (a mosaic from the pixels closest to the s2 image)
-    .map(function (lsPrep_wIndicies) {
-      var gediMasterLS00 = ee.ImageCollection.fromImages(
-          ee.List(lsPrep_wIndicies.get('gedi'))
+    .map(function (finalGedi_v2) {
+      var lsPrep_wIndicies = ee.ImageCollection.fromImages(
+          ee.List(finalGedi_v2.get('gedi'))
         )
-        .map(function (gediMasterLS00) {
+        .map(function (lsPrep_wIndicies) {
           var quality = ee.Image(
-              gediMasterLS00.date()
-                .difference(lsPrep_wIndicies.date(), 'day')
+              lsPrep_wIndicies.date()
+                .difference(finalGedi_v2.date(), 'day')
                 .abs()
                 .multiply(-1)
             )
             .rename('gediLS_dayDiff') // -(number of days from the s2 image)
-          return gediMasterLS00
+          return lsPrep_wIndicies
             .addBands(quality)
             .float()
-            // .updateMask(lsPrep_wIndicies.reduce('sum').gte(1))//.mask())
-            .updateMask(lsPrep_wIndicies.select('blue').mask())//.mask()) // Comeback 20260115
+            // .updateMask(lsPrep_wIndicies.select(['blue','green','red','nir','swir1','swir2']).reduce('sum').gte(1))//.mask())
+            // .updateMask(lsPrep_wIndicies.select('blue').mask())//.mask()) // Comeback 20260115
         })
         .qualityMosaic('gediLS_dayDiff') 
-      return lsPrep_wIndicies.addBands(gediMasterLS00)
+      return finalGedi_v2.addBands(lsPrep_wIndicies)
     })
-  
+  print(gediMasterLS," >>>>>> gediMasterLS Joined")
   // Convert Collection to mosaic
   // This will select the pixel with the highest agbd if they overlap
   gediMasterLS = gediMasterLS.qualityMosaic('agbd').clip(Validation04)
+  print(gediMasterLS," >>>>>> gediMasterLS Joined Quality Mosaic AGDB")
+  
   Map.addLayer(gediMasterLS,{},"gediMasterLS CHECK")
+  
+  
+  
   
   ///////////////////////////////////////////////////////////////////////////////////////////////
   //
