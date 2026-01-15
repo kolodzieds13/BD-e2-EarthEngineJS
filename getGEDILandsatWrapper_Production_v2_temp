@@ -102,8 +102,8 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
  
   
   // Select Start and End Days (in Julian Days)
-  var startJulian = 1
-  var endJulian = 180//365
+  var startJulian = 116
+  var endJulian = 123//365
   // Select Start and End Years
   // Note: GEDI Observation are avaliable from 2019 through 2023
   // Year 2023 only has data till March: endJulian no later than 91
@@ -974,7 +974,6 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
     gediMasterLS = gediMasterLS.addBands(hansenTreeLoss)
   
   }
-  
   
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   //
