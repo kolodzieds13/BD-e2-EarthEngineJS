@@ -102,8 +102,8 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
  
   
   // Select Start and End Days (in Julian Days)
-  var startJulian = 131
-  var endJulian = 138//365
+  var startJulian = 122
+  var endJulian = 152//365
   // Select Start and End Years
   // Note: GEDI Observation are avaliable from 2019 through 2023
   // Year 2023 only has data till March: endJulian no later than 91
@@ -662,22 +662,22 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
           .map(getImagesLib.addTCAngles)
   
   if (simpleLandsat){
-    lsPrep_wIndicies=lsPrep_wIndicies.select(bandDictionary['reflectanceSimple'].add('lsDate')) //'lsDate'
+    lsPrep_wIndicies=lsPrep_wIndicies.select(bandDictionary['reflectanceSimple'])//.add('lsDate')) //'lsDate'
   } else {
-    lsPrep_wIndicies=lsPrep_wIndicies.select(bandDictionary['reflectanceAll'].add('lsDate')) //'lsDate'
+    lsPrep_wIndicies=lsPrep_wIndicies.select(bandDictionary['reflectanceAll'])//.add('lsDate')) //'lsDate'
   }
   
-  getImageLib.exportToAssetWrapper(
-    lsPrep_wIndicies.median(),
-    'TEST_Landsat_Composite_July2019',
-    'projects/ee-kolodzieds13/assets/TestIMG/TEST_Landsat_Composite_July2019',
-    {'.default':'sample'},
+  getImagesLib.exportToDriveWrapper(
+    lsPrep_wIndicies.median().float(),
+    'TEST_Landsat_Composite_May2019_v3',
+    'testImg',
+    // 'projects/ee-kolodzieds13/assets/TestIMG/TEST_Landsat_Composite_May2019',
     args.studyArea,
     null,
     args.crs,
     args.transform,
-    -32768):
-    )
+    -32768);
+    
   
   
   
