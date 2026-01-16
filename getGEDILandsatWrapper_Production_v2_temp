@@ -166,10 +166,16 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
       return im
     }
   }
-  //GEDI Date YYYYMMdd
+  // //GEDI Date YYYYMMdd
+  // var addDateGEDI = function(im){
+  //   var doy = im.date().format('YYYYMMdd');
+  //   var doyBand = ee.Image.constant(ee.Number.parse(doy)).add(ee.Image.constant(1)).rename('gediDate').toInt()
+  //   return im.addBands(doyBand);
+  // };
+  
   var addDateGEDI = function(im){
     var doy = im.date().format('YYYYMMdd');
-    var doyBand = ee.Image.constant(ee.Number.parse(doy)).add(ee.Image.constant(1)).rename('gediDate').toInt()
+    var doyBand = ee.Image.constant(ee.Number.parse(doy)).rename('gediDate').toInt()
     return im.addBands(doyBand);
   };
   
@@ -622,7 +628,7 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
   // If method other than 'near' is chosen, any map drawn on the fly that is not
   // reprojected, will appear blurred
   // Use .reproject to view the actual resulting image (this will slow it down)
-  args.resampleMethod = 'near'//'bicubic';
+  args.resampleMethod = 'bicubic'//'bicubic';
   
   // If available, bring in preComputed cloudScore offsets and TDOM stats
   // Set to null if computing on-the-fly is wanted
@@ -667,9 +673,10 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
     lsPrep_wIndicies=lsPrep_wIndicies.select(bandDictionary['reflectanceAll'].add('lsDate')) //'lsDate'
   }
   
+  print('Landsat Projection',lsPrep_wIndicies.first().projection())
   getImagesLib.exportToDriveWrapper(
     lsPrep_wIndicies.median().float(),
-    'TEST_Landsat_Composite_May2019_v3',
+    'TEST_Landsat_Composite_May2019_v8_bicubic',
     'testImg',
     // 'projects/ee-kolodzieds13/assets/TestIMG/TEST_Landsat_Composite_May2019',
     args.studyArea,
@@ -775,7 +782,7 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
   //https://gis.stackexchange.com/questions/345962/create-paired-images-by-near-date
   // Add the landsatBands to the gedi band
   var gediMasterLS = ee.ImageCollection( //gediMasterLandsatLCMS
-    ee.Join.saveAll({matchesKey: 'gedi'})
+    ee.Join.saveAll({matchesKey: 'landsat'})
       .apply({ 
         primary: finalGedi_v2,//lsPrep_wIndicies, 
         secondary: lsPrep_wIndicies,//finalGedi_v2, 
@@ -785,7 +792,7 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
     // Add the s1 band (a mosaic from the pixels closest to the s2 image)
     .map(function (finalGedi_v2) {
       var lsPrep_wIndicies = ee.ImageCollection.fromImages(
-          ee.List(finalGedi_v2.get('gedi'))
+          ee.List(finalGedi_v2.get('landsat'))
         )
         .map(function (lsPrep_wIndicies) {
           var quality = ee.Image(
@@ -799,7 +806,7 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
             .addBands(quality)
             .float()
             // .updateMask(lsPrep_wIndicies.select(['blue','green','red','nir','swir1','swir2']).reduce('sum').gte(1))//.mask())
-            .updateMask(lsPrep_wIndicies.select('blue').mask())//.mask()) // Comeback 20260115
+            // .updateMask(lsPrep_wIndicies.select('blue').mask())//.mask()) // Comeback 20260115
         })
         .qualityMosaic('gediLS_dayDiff') 
       return finalGedi_v2.addBands(lsPrep_wIndicies)
