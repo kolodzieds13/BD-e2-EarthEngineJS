@@ -628,7 +628,7 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
   // If method other than 'near' is chosen, any map drawn on the fly that is not
   // reprojected, will appear blurred
   // Use .reproject to view the actual resulting image (this will slow it down)
-  args.resampleMethod = 'bilinear'//'bicubic';
+  args.resampleMethod = 'bicubic'//'bicubic';
   
   // If available, bring in preComputed cloudScore offsets and TDOM stats
   // Set to null if computing on-the-fly is wanted
@@ -676,7 +676,7 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
   
   
   var landsatReprj = function(img){
-    var reprojImg = img.resample('bilinear').reproject({crs:imgCRS, crsTransform:imgTransform})
+    var reprojImg = img.resample('bicubic').reproject({crs:imgCRS, crsTransform:imgTransform})
     return reprojImg
   }
   
@@ -732,7 +732,7 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
   
   // Add Date to Landsat
   
-  lsPrep_wIndicies = lsPrep_wIndicies.map(addLSDate)
+  // lsPrep_wIndicies = lsPrep_wIndicies.map(addLSDate)
   
   
   // //////////////////////////////////////////////////////////////////
@@ -789,69 +789,69 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
   /////////////////////////////////////////////////////////////////
   
   
-  //https://gis.stackexchange.com/questions/345962/create-paired-images-by-near-date
-  // Add the landsatBands to the gedi band
-  var gediMasterLS = ee.ImageCollection( //gediMasterLandsatLCMS
-    ee.Join.saveAll({matchesKey: 'landsat'})
-      .apply({ 
-        primary: finalGedi_v2,//lsPrep_wIndicies, 
-        secondary: lsPrep_wIndicies,//finalGedi_v2, 
-        condition: ee.Filter.and(maxDiffFilter, intersects)
-      })
-    )
-    // Add the s1 band (a mosaic from the pixels closest to the s2 image)
-    .map(function (finalGedi_v2) {
-      var lsPrep_wIndicies = ee.ImageCollection.fromImages(
-          ee.List(finalGedi_v2.get('landsat'))
-        )
-        .map(function (lsPrep_wIndicies) {
-          var quality = ee.Image(
-              lsPrep_wIndicies.date()
-                .difference(finalGedi_v2.date(), 'day')
-                .abs()
-                .multiply(-1)
-            )
-            .rename('gediLS_dayDiff') // -(number of days from the s2 image)
-          return lsPrep_wIndicies
-            .addBands(quality)
-            .float()
-            // .updateMask(lsPrep_wIndicies.select(['blue','green','red','nir','swir1','swir2']).reduce('sum').gte(1))//.mask())
-            .updateMask(lsPrep_wIndicies.select('blue').mask())//.mask()) // Comeback 20260115
-        })
-        .qualityMosaic('gediLS_dayDiff') 
-      return finalGedi_v2.addBands(lsPrep_wIndicies)
-    })
-  print(gediMasterLS," >>>>>> gediMasterLS Joined")
-  // Convert Collection to mosaic
-  // This will select the pixel with the highest agbd if they overlap
-  gediMasterLS = gediMasterLS.qualityMosaic('agbd')//.clip(Validation04)
-  print(gediMasterLS," >>>>>> gediMasterLS Joined Quality Mosaic AGDB")
+  // //https://gis.stackexchange.com/questions/345962/create-paired-images-by-near-date
+  // // Add the landsatBands to the gedi band
+  // var gediMasterLS = ee.ImageCollection( //gediMasterLandsatLCMS
+  //   ee.Join.saveAll({matchesKey: 'landsat'})
+  //     .apply({ 
+  //       primary: finalGedi_v2,//lsPrep_wIndicies, 
+  //       secondary: lsPrep_wIndicies,//finalGedi_v2, 
+  //       condition: ee.Filter.and(maxDiffFilter, intersects)
+  //     })
+  //   )
+  //   // Add the s1 band (a mosaic from the pixels closest to the s2 image)
+  //   .map(function (finalGedi_v2) {
+  //     var lsPrep_wIndicies = ee.ImageCollection.fromImages(
+  //         ee.List(finalGedi_v2.get('landsat'))
+  //       )
+  //       .map(function (lsPrep_wIndicies) {
+  //         var quality = ee.Image(
+  //             lsPrep_wIndicies.date()
+  //               .difference(finalGedi_v2.date(), 'day')
+  //               .abs()
+  //               .multiply(-1)
+  //           )
+  //           .rename('gediLS_dayDiff') // -(number of days from the s2 image)
+  //         return lsPrep_wIndicies
+  //           .addBands(quality)
+  //           .float()
+  //           // .updateMask(lsPrep_wIndicies.select(['blue','green','red','nir','swir1','swir2']).reduce('sum').gte(1))//.mask())
+  //           .updateMask(lsPrep_wIndicies.select('blue').mask())//.mask()) // Comeback 20260115
+  //       })
+  //       .qualityMosaic('gediLS_dayDiff') 
+  //     return finalGedi_v2.addBands(lsPrep_wIndicies)
+  //   })
+  // print(gediMasterLS," >>>>>> gediMasterLS Joined")
+  // // Convert Collection to mosaic
+  // // This will select the pixel with the highest agbd if they overlap
+  // gediMasterLS = gediMasterLS.qualityMosaic('agbd')//.clip(Validation04)
+  // print(gediMasterLS," >>>>>> gediMasterLS Joined Quality Mosaic AGDB")
   
-  Map.addLayer(gediMasterLS,{},"gediMasterLS CHECK")
+  // Map.addLayer(gediMasterLS,{},"gediMasterLS CHECK")
   
-  // Filter to the exact date you want to validate
-  
-  
-  // Convert 20190429 -> ee.Date('2019-04-29')
-  var targetDate = ee.Date.parse('YYYY-MM-dd', '2019-04-29');
-  
-  // Filter using the image's actual date property
-  var targetLS = lsPrep_wIndicies.filter(
-    ee.Filter.date(targetDate, targetDate.advance(1, 'day'))
-  ).first();
+  // // Filter to the exact date you want to validate
   
   
-  print(targetLS,"targetLS")
+  // // Convert 20190429 -> ee.Date('2019-04-29')
+  // var targetDate = ee.Date.parse('YYYY-MM-dd', '2019-04-29');
   
-  getImagesLib.exportToDriveWrapper(
-    targetLS.float(),
-    'TEST_Landsat_Date20190429_v99',
-    'testImg',
-    args.studyArea,
-    null,
-    args.crs,
-    args.transform,
-    -32768);
+  // // Filter using the image's actual date property
+  // var targetLS = lsPrep_wIndicies.filter(
+  //   ee.Filter.date(targetDate, targetDate.advance(1, 'day'))
+  // ).first();
+  
+  
+  // print(targetLS,"targetLS")
+  
+  // getImagesLib.exportToDriveWrapper(
+  //   targetLS.float(),
+  //   'TEST_Landsat_Date20190429_v99',
+  //   'testImg',
+  //   args.studyArea,
+  //   null,
+  //   args.crs,
+  //   args.transform,
+  //   -32768);
   
   
   
@@ -1175,6 +1175,11 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
     
     // 2. Calculate time difference for every pixel in every match
     var matchColWithDiff = matchCol.map(function (lsImg) {
+      
+
+      var doy = lsImg.date().format('YYYYMMdd');
+      var doyBand = ee.Image.constant(ee.Number.parse(doy)).rename('lsDate')
+      
       var timeDiff = lsImg.date()
         .difference(gediImg.date(), 'day')
         .abs(); 
@@ -1185,7 +1190,7 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
         .multiply(-1)
         .rename('timeMatchQuality');
       
-      return lsImg.addBands(qualityBand)
+      return lsImg.addBands(qualityBand).addBands(doyBand)
                   .float()
                   // Update mask: Only keep pixels where Landsat is valid (e.g. not cloud masked)
                   .updateMask(lsImg.select('blue').mask()); 
@@ -1220,7 +1225,7 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
   
   var table = finalCollection.map(function(img) {
     return img.sample({
-      region: AOI,
+      region: AOI.buffer(100),
       scale: 25, 
       projection: 'EPSG:32610', // Force Lat/Lon projection for the CSV coords
       geometries: false,       // We don't need the geometry column anymore, we have Lat/Lon bands
@@ -1231,12 +1236,38 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
   // Export
   Export.table.toDrive({
     collection: table,
-    description: "GEDI_Landsat_Joined_v3_WithCoords",
+    description: "GEDI_Landsat_Joined_v3_WithCoords_Bicubic",
     folder: 'testImg', // [cite: 1]
     fileFormat: 'CSV',
     selectors: ['agbd', 'lsDate', 'gediDate', 'latitude', 'longitude', 'blue', 'red', 'nir', 'swir1', 'swir2'] 
     // ^ Explicitly list columns to ensure order and exclude junk bands like 'timeMatchQuality'
   });
+  
+  
+    // Filter to the exact date you want to validate
+  
+  
+  // Convert 20190429 -> ee.Date('2019-04-29')
+  var targetDate = ee.Date.parse('YYYY-MM-dd', '2019-04-29');
+  
+  // Filter using the image's actual date property
+  var targetLS = lsPrep_wIndicies.filter(
+    ee.Filter.date(targetDate, targetDate.advance(1, 'day'))
+  ).first();
+  
+  
+  print(targetLS,"targetLS")
+  
+  getImagesLib.exportToDriveWrapper(
+    targetLS.float(),
+    'TEST_Landsat_Date20190429_v99_bicubic_v2',
+    'testImg',
+    args.studyArea,
+    null,
+    args.crs,
+    args.transform,
+    -32768);
+  
   
   
   
