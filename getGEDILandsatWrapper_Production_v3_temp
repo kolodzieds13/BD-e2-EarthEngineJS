@@ -1270,9 +1270,9 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
     'TEST_Landsat_Date20190429_v99_NearestNoSnap',
     'testImg',
     AOI,
-    null,
     args.scale,
     args.crs,
+    null,
     // args.transform,
     -32768);
   
