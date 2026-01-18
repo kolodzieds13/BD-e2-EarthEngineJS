@@ -117,9 +117,9 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
   // Select Projection
   var imgCRS = 'EPSG:32610' //5070 / 32610
   // Select Scale: Desired resolution of data.
-  var imgScale = null
+  var imgScale = 25//null
   // Select Transform. Transform is used to ensure proper snapping to other datasets
-  var imgTransform = [25, 0, 248650, 0, -25, 5323275]//[30,0,-2361915,0,-30,3177735]
+  var imgTransform = null//[25, 0, 248650, 0, -25, 5323275]//[30,0,-2361915,0,-30,3177735]
   
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   //
@@ -628,7 +628,7 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
   // If method other than 'near' is chosen, any map drawn on the fly that is not
   // reprojected, will appear blurred
   // Use .reproject to view the actual resulting image (this will slow it down)
-  args.resampleMethod = 'bicubic'//'bicubic';
+  args.resampleMethod = 'near'//'bicubic';
   
   // If available, bring in preComputed cloudScore offsets and TDOM stats
   // Set to null if computing on-the-fly is wanted
@@ -681,7 +681,7 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
   // }
   
   var landsatReprj = function(img){
-    var reprojImg = img.resample('nearest')
+    var reprojImg = img.resample('near')
     return reprojImg
   }
   
@@ -690,7 +690,7 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
   //   return reprojImg
   // }
   
-  lsPrep_wIndicies = lsPrep_wIndicies.map(landsatReprj)
+  // lsPrep_wIndicies = lsPrep_wIndicies.map(landsatReprj)
   
   var tempProj = lsPrep_wIndicies.first().select('blue').projection().getInfo()
   print(tempProj.crs, 'Projection CRS')
@@ -1228,9 +1228,11 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
   // We map .sample() over the collection and flatten the results. 
   // This is safer than mosaicking if you have overlapping GEDI shots you want to preserve.
   
+  var roi = AOI.geometry().bounds(100,'EPSG:32610')
+  
   var table = finalCollection.map(function(img) {
     return img.sample({
-      region: AOI,
+      region: roi,
       scale: 25, 
       projection: 'EPSG:32610', // Force Lat/Lon projection for the CSV coords
       geometries: false,       // We don't need the geometry column anymore, we have Lat/Lon bands
@@ -1265,12 +1267,13 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
   
   getImagesLib.exportToDriveWrapper(
     targetLS.float(),
-    'TEST_Landsat_Date20190429_v99_bicubic_v2',
+    'TEST_Landsat_Date20190429_v99_NearestNoSnap',
     'testImg',
-    args.studyArea,
+    AOI,
     null,
+    args.scale,
     args.crs,
-    args.transform,
+    // args.transform,
     -32768);
   
   
