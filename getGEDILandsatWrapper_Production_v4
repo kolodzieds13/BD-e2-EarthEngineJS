@@ -461,212 +461,118 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
   });
   
   
-  //////////////////////////////////////////////////////////////////
+  //////////////////////////////////////////////////
   //
-  //             Prepare Landsat Data using GTAC Module
+  //      NEW
   //
-  /////////////////////////////////////////////////////////////////
+  //////////////////////////////////////////////////
+// =======================================================
+// 1. DEFINE PARAMETERS
+// =======================================================
+
+  var startYear = '2019-01-01';
+  var endYear = '2023-12-31';
   
+  // Define your AOI 
+  // var AOI = ... 
   
-  //Module imports
-  // var getImagesLib = require('users/aaronkamoske/GTAC-Modules:getImagesLib.js');
-  // var getImagesLib = require('users/davidkolodziejski/GEDI:getImages_ArgusGeo')
-  ///////////////////////////////////////////////////////////////////////////////
-  // Define user parameters:
-  var args = {};
+  // =======================================================
+  // 2. HELPER FUNCTIONS
+  // =======================================================
   
-  // Specify study area: Study area
-  // Can be a featureCollection, feature, or geometry
-  args.studyArea = AOI//Kenobi_AOI//AOI;
+  /**
+   * Mask clouds/shadows on Raw DN data (Level 1)
+   */
+  var maskCloudsC2 = function(image) {
+    var qa = image.select('QA_PIXEL');
+    // Bit 1: Dilated Cloud, Bit 3: Cloud, Bit 4: Cloud Shadow
+    var mask = qa.bitwiseAnd(1 << 1).eq(0)
+          .and(qa.bitwiseAnd(1 << 3).eq(0))
+          .and(qa.bitwiseAnd(1 << 4).eq(0));
+    return image.updateMask(mask);
+  };
   
-  var Validation04 = AOI//Kenobi_AOI//AOI
+  /**
+   * Convert Raw DN to TOA Reflectance
+   * Formula: ((DN * 0.0000275) - 0.2) / sin(SunElevation)
+   */
+  var applyTOAConversion = function(image) {
+    // 1. Apply Scale Factors
+    var opticalBands = image.select(['B2', 'B3', 'B4', 'B5', 'B6', 'B7'])
+                            .multiply(0.0000275).add(-0.2);
+                            
+    // 2. Correct for Sun Elevation
+    var sunElevation = ee.Number(image.get('SUN_ELEVATION'));
+    var sunElevRad = sunElevation.multiply(Math.PI).divide(180);
+    
+    // 3. Calculate TOA and Clamp
+    // CRITICAL: We clamp to [0, 1]. EVI math fails if values are negative.
+    var toaReflectance = opticalBands.divide(sunElevRad.sin())
+                                     .clamp(0, 1); 
   
-  // Update the startJulian and endJulian variables to indicate your seasonal 
-  // constraints. This supports wrapping for tropics and southern hemisphere.
-  // If using wrapping and the majority of the days occur in the second year, the system:time_start will default 
-  // to June 1 of that year.Otherwise, all system:time_starts will default to June 1 of the given year
-  // startJulian: Starting Julian date 
-  // endJulian: Ending Julian date
+    return image.addBands(toaReflectance, null, true)
+                .copyProperties(image, ['system:time_start', 'SUN_ELEVATION']);
+  };
   
-    // Annual = 1 - 365
-    // Spring = 60 - 152 : March Through May
-    // Summer = 152 - 244: June through August
-    // Fall = 244 - 335: Sepetember through November
-    // Winter = 335 - 60: December through February
+  /**
+   * Add Date Band
+   */
+  // var addLSDate = function(image){
+  //   var doy = image.date().format('YYYYMMdd');
+  //   var doyBand = ee.Image.constant(ee.Number.parse(doy)).rename('lsDate').toInt();
+  //   return image.addBands(doyBand);
+  // };
   
+  /**
+   * Add Spectral Indices (NDVI, EVI, NBR)
+   * Requires bands to be renamed to 'red', 'nir', 'blue', 'swir2' first.
+   */
+  var addIndices = function(image) {
+    // 1. NDVI = (NIR - Red) / (NIR + Red)
+    var ndvi = image.normalizedDifference(['nir', 'red']).rename('NDVI');
+    
+    // 2. EVI = 2.5 * ((NIR - Red) / (NIR + 6 * Red - 7.5 * Blue + 1))
+    var evi = image.expression(
+      '2.5 * ((NIR - RED) / (NIR + 6 * RED - 7.5 * BLUE + 1))', {
+        'NIR': image.select('nir'),
+        'RED': image.select('red'),
+        'BLUE': image.select('blue')
+      }).rename('EVI');
   
+    // 3. NBR = (NIR - SWIR2) / (NIR + SWIR2)
+    // Standard index for burn severity and biomass disturbance.
+    var nbr = image.normalizedDifference(['nir', 'swir2']).rename('NBR');
   
-  args.startJulian = startJulian;  //152
-  args.endJulian = endJulian;    // 244
+    return image.addBands([ndvi, evi, nbr]);
+  };
   
-  // Specify start and end years for all analyses
-  // More than a 3 year span should be provided for time series methods to work 
-  // well. If providing pre-computed stats for cloudScore and TDOM, this does not 
-  // matter
-  args.startYear = startYear; //2000
-  args.endYear = endYear; //2022
+  // =======================================================
+  // 3. MAIN PROCESSING CHAIN
+  // =======================================================
   
+  var l8 = ee.ImageCollection("LANDSAT/LC08/C02/T1");
+  var l9 = ee.ImageCollection("LANDSAT/LC09/C02/T1");
   
-  // var StartMonth = ee.Number(6);
-  // var EndMonth = ee.Number(9);
+  var lsPrep_wIndicies = l8.merge(l9)
+    .filterBounds(AOI)
+    .filterDate(startYear, endYear)
+    .map(maskCloudsC2)         // 1. Mask Clouds on Raw DN
+    .map(applyTOAConversion)   // 2. Convert to TOA
+    // .map(addLSDate)            // 3. Add Date
+    .select(['B2', 'B3', 'B4', 'B5', 'B6', 'B7'], 
+            ['blue', 'green', 'red', 'nir', 'swir1', 'swir2']) // 4. Rename
+    .map(addIndices);          // 5. Calculate Indices (Must happen AFTER Rename)
   
+  // =======================================================
+  // 4. DIAGNOSTICS & NEXT STEPS
+  // =======================================================
   
-  var StartYr = args.startYear//ee.Number(args.startYear);
-  var EndYr = args.endYear//ee.Number(args.endYear);
+  print("Final Collection Size:", lsPrep_wIndicies.size());
   
-  print(StartYr,"StartYr")
-  print(EndYr,"EndYr")
-  
-  
-  // var rez = ee.Number(30) // Meters
-  
-  // var proxy = Start.subtract(ee.Number(2000))
-  
-  
-  // Specify an annual buffer to include imagery from the same season 
-  // timeframe from the prior and following year. timeBuffer = 1 will result 
-  // in a 3 year moving window. If you want single-year composites, set to 0
-  args.timebuffer =0;
-  
-  // Specify the weights to be used for the moving window created by timeBuffer
-  // For example- if timeBuffer is 1, that is a 3 year moving window
-  // If the center year is 2000, then the years are 1999,2000, and 2001
-  // In order to overweight the center year, you could specify the weights as
-  // [1,5,1] which would duplicate the center year 5 times and increase its weight for
-  // the compositing method. If timeBuffer = 0, set to [1]
-  args.weights = [1];
-  
-  // Choose medoid or median compositing method. 
-  // Median tends to be smoother, while medoid retains 
-  // single date of observation across all bands
-  // The date of each pixel is stored if medoid is used. This is not done for median
-  // If not exporting indices with composites to save space, medoid should be used
-  args.compositingMethod = 'medoid';
-  
-  // Choose Top of Atmospheric (TOA) or Surface Reflectance (SR) 
-  args.toaOrSR = 'TOA';
-  
-  // Choose which Landsat USGS Collection version to use
-  // Choices are 'C1' for Collection 1 and 'C2' for Collection 2
-  // Only choose 'C1' if working with other Collection 1 data and using
-  // data from before 1/1/2022. Otherwise, choose 'C2'
-  // See: https://www.usgs.gov/landsat-missions/landsat-collection-2 for more information
-  args.landsatCollectionVersion = 'C2';
-  
-  // Choose whether to include Landat 7
-  // Generally only included when data are limited
-  args.includeSLCOffL7 = false;
-  
-  // Whether to defringe L4 and L5
-  // Landsat 4 and 5 data have fringes on the edges that can introduce anomalies into 
-  // the analysis.  This method removes them, but is somewhat computationally expensive
-  args.defringeL5 = true;
-  
-  // Choose cloud/cloud shadow masking method
-  // Choices are a series of booleans for cloudScore, TDOM, and elements of Fmask
-  // Fmask masking options will run fastest since they're precomputed
-  // Fmask cloud mask is generally very good, while the fMask cloud shadow
-  // mask isn't great. TDOM tends to perform better than the Fmask cloud shadow mask. cloudScore 
-  // is usually about as good as the Fmask cloud mask overall, but each fails in different instances.
-  // CloudScore runs pretty quickly, but does look at the time series to find areas that 
-  // always have a high cloudScore to reduce commission errors- this takes some time
-  // and needs a longer time series (>5 years or so)
-  // TDOM also looks at the time series and will need a longer time series
-  // If pre-computed cloudScore offsets and/or TDOM stats are provided below, cloudScore
-  // and TDOM will run quite quickly
-  args.applyCloudScore = true;
-  args.applyFmaskCloudMask = true;
-  
-  args.applyTDOM = true;
-  args.applyFmaskCloudShadowMask = true;
-  
-  args.applyFmaskSnowMask = false//false;
-  
-  // If applyCloudScore is set to true
-  // cloudScoreThresh: lower number masks more clouds.  Between 10 and 30 generally 
-  // works best
-  args.cloudScoreThresh = 20//20;
-  
-  // Whether to find if an area typically has a high cloudScore
-  // If an area is always cloudy, this will result in cloud masking omission
-  // For bright areas that may always have a high cloudScore
-  // but not actually be cloudy, this will result in a reduction of commission errors
-  // This procedure needs at least 5 years of data to work well
-  // Precomputed offsets can be provided below
-  args.performCloudScoreOffset = true;
-  
-  // If performCloudScoreOffset = true:
-  // Percentile of cloud score to pull from time series to represent a minimum for 
-  // the cloud score over time for a given pixel. Reduces comission errors over 
-  // cool bright surfaces. Generally between 5 and 10 works well. 0 generally is a
-  // bit noisy but may be necessary in persistently cloudy areas
-  args.cloudScorePctl = 10; 
-  
-  // zScoreThresh: If applyTDOM is true, this is the threshold for cloud shadow masking- 
-  // lower number masks out less. Between -0.8 and -1.2 generally works well
-  args.zScoreThresh = -1;
-  
-  // shadowSumThresh:  If applyTDOM is true, sum of IR bands to include as shadows within TDOM and the 
-  //    shadow shift method (lower number masks out less)
-  args.shadowSumThresh = 0.35;
-  
-  // contractPixels: The radius of the number of pixels to contract (negative 
-  //    buffer) clouds and cloud shadows by. Intended to eliminate smaller cloud 
-  //    patches that are likely errors
-  // (1.5 results in a -1 pixel buffer)(0.5 results in a -0 pixel buffer)
-  // (1.5 or 2.5 generally is sufficient)
-  args.contractPixels = 1.5; 
-  
-  // dilatePixels: The radius of the number of pixels to dilate (buffer) clouds 
-  //    and cloud shadows by. Intended to include edges of clouds/cloud shadows 
-  //    that are often missed
-  // (1.5 results in a 1 pixel buffer)(0.5 results in a 0 pixel buffer)
-  // (2.5 or 3.5 generally is sufficient)
-  args.dilatePixels = 5;
-  
-  // Choose the resampling method: 'near', 'bilinear', or 'bicubic'
-  // Defaults to 'near'
-  // If method other than 'near' is chosen, any map drawn on the fly that is not
-  // reprojected, will appear blurred
-  // Use .reproject to view the actual resulting image (this will slow it down)
-  args.resampleMethod = 'near'//'bicubic';
-  
-  // If available, bring in preComputed cloudScore offsets and TDOM stats
-  // Set to null if computing on-the-fly is wanted
-  // These have been pre-computed for all CONUS for Landsat and Setinel 2 (separately)
-  // and are appropriate to use for any time period within the growing season
-  // The cloudScore offset is generally some lower percentile of cloudScores on a pixel-wise basis
-  args.preComputedCloudScoreOffset = null//getImagesLib.getPrecomputedCloudScoreOffsets(args.cloudScorePctl).landsat;
-  
-  // The TDOM stats are the mean and standard deviations of the two IR bands used in TDOM
-  // By default, TDOM uses the nir and swir1 bands
-  var preComputedTDOMStats = getImagesLib.getPrecomputedTDOMStats();
-  args.preComputedTDOMIRMean = preComputedTDOMStats.landsat.mean;
-  args.preComputedTDOMIRStdDev = preComputedTDOMStats.landsat.stdDev;
-  
-  
-  
-  // correctIllumination: Choose if you want to correct the illumination using
-  // Sun-Canopy-Sensor+C correction. Additionally, choose the scale at which the
-  // correction is calculated in meters.
-  args.correctIllumination = false;
-  args.correctScale = 250;//Choose a scale to reduce on- 250 generally works well
-  
-  // Export params
-  args.crs = imgCRS;
-  
-  // Specify transform if scale is null and snapping to known grid is needed
-  args.transform = imgTransform
-  
-  // Specify scale if transform is null
-  args.scale = imgScale;
-  
-  var lsPrep = getImagesLib.getProcessedLandsatScenes(args)
-  
-  var lsPrep_wIndicies = lsPrep
-          // .map(addLSDate)
-          .map(getImagesLib.addSAVIandEVI)
-          .map(getImagesLib.addTCAngles)
+  // Add to map to verify EVI isn't broken (should be mostly gray/white/green)
+  var indexVis = {min: 0, max: 1, palette: ['white', 'green']};
+  Map.addLayer(lsPrep_wIndicies.select('EVI').median().clip(AOI), indexVis, 'Median EVI');
+    
   
   if (simpleLandsat){
     lsPrep_wIndicies=lsPrep_wIndicies.select(bandDictionary['reflectanceSimple']) //'lsDate'
@@ -674,23 +580,7 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
     lsPrep_wIndicies=lsPrep_wIndicies.select(bandDictionary['reflectanceAll']) //'lsDate'
   }
   
-  
-  
-  // var landsatReprj = function(img){
-  //   var reprojImg = img.resample('nearest').reproject({crs:imgCRS, crsTransform:imgTransform})
-  //   return reprojImg
-  // }
-  
-  // var landsatReprj = function(img){
-  //   var reprojImg = img.resample('nearest')
-  //   return reprojImg
-  // }
-  
-  // var landsatReprj = function(img){
-  //   var reprojImg = img.reproject({crs:imgCRS, crsTransform:imgTransform})
-  //   return reprojImg
-  // }
-  
+
   // lsPrep_wIndicies = lsPrep_wIndicies.map(landsatReprj)
   
   var tempProj = lsPrep_wIndicies.first().select('blue').projection().getInfo()
@@ -740,397 +630,7 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
   
   // lsPrep_wIndicies = lsPrep_wIndicies.map(addLSDate)
   
-  
-  // //////////////////////////////////////////////////////////////////
-  // //
-  // //             GEDI + Landsat Fusion
-  // //
-  // /////////////////////////////////////////////////////////////////
-  
-  
-  // //https://gis.stackexchange.com/questions/345962/create-paired-images-by-near-date
-  
-  // var gediMasterLS = ee.ImageCollection( //gediMasterLandsatLCMS
-  //   ee.Join.saveAll({matchesKey: 'gedi'})
-  //     .apply({ 
-  //       primary: lsPrep_wIndicies, 
-  //       secondary: finalGedi_v2, 
-  //       condition: ee.Filter.and(maxDiffFilter, intersects)
-  //     })
-  //   )
-  //   // Add the s1 band (a mosaic from the pixels closest to the s2 image)
-  //   .map(function (lsPrep_wIndicies) {
-  //     var gediMasterLS00 = ee.ImageCollection.fromImages(
-  //         ee.List(lsPrep_wIndicies.get('gedi'))
-  //       )
-  //       .map(function (gediMasterLS00) {
-  //         var quality = ee.Image(
-  //             gediMasterLS00.date()
-  //               .difference(lsPrep_wIndicies.date(), 'day')
-  //               .abs()
-  //               .multiply(-1)
-  //           )
-  //           .rename('gediLS_dayDiff') // -(number of days from the s2 image)
-  //         return gediMasterLS00
-  //           .addBands(quality)
-  //           .float()
-  //           // .updateMask(lsPrep_wIndicies.select(['blue','green','red','nir','swir1','swir2']).reduce('sum').gte(1))//.mask())
-  //           // .updateMask(lsPrep_wIndicies.select('blue').mask())//.mask()) // Comeback 20260115
-  //       })
-  //       .qualityMosaic('gediLS_dayDiff') 
-  //     return lsPrep_wIndicies.addBands(gediMasterLS00)
-  //   })
-  // print(gediMasterLS," >>>>>> gediMasterLS Joined")
-  // // Convert Collection to mosaic
-  // // This will select the pixel with the highest agbd if they overlap
-  // gediMasterLS = gediMasterLS.qualityMosaic('agbd').clip(Validation04)
-  // print(gediMasterLS," >>>>>> gediMasterLS Joined Quality Mosaic AGDB")
-  
-  // Map.addLayer(gediMasterLS,{},"gediMasterLS CHECK")
-  
-    //////////////////////////////////////////////////////////////////
-  //
-  //             GEDI + Landsat Fusion Flipped
-  //
-  /////////////////////////////////////////////////////////////////
-  
-  
-  // //https://gis.stackexchange.com/questions/345962/create-paired-images-by-near-date
-  // // Add the landsatBands to the gedi band
-  // var gediMasterLS = ee.ImageCollection( //gediMasterLandsatLCMS
-  //   ee.Join.saveAll({matchesKey: 'landsat'})
-  //     .apply({ 
-  //       primary: finalGedi_v2,//lsPrep_wIndicies, 
-  //       secondary: lsPrep_wIndicies,//finalGedi_v2, 
-  //       condition: ee.Filter.and(maxDiffFilter, intersects)
-  //     })
-  //   )
-  //   // Add the s1 band (a mosaic from the pixels closest to the s2 image)
-  //   .map(function (finalGedi_v2) {
-  //     var lsPrep_wIndicies = ee.ImageCollection.fromImages(
-  //         ee.List(finalGedi_v2.get('landsat'))
-  //       )
-  //       .map(function (lsPrep_wIndicies) {
-  //         var quality = ee.Image(
-  //             lsPrep_wIndicies.date()
-  //               .difference(finalGedi_v2.date(), 'day')
-  //               .abs()
-  //               .multiply(-1)
-  //           )
-  //           .rename('gediLS_dayDiff') // -(number of days from the s2 image)
-  //         return lsPrep_wIndicies
-  //           .addBands(quality)
-  //           .float()
-  //           // .updateMask(lsPrep_wIndicies.select(['blue','green','red','nir','swir1','swir2']).reduce('sum').gte(1))//.mask())
-  //           .updateMask(lsPrep_wIndicies.select('blue').mask())//.mask()) // Comeback 20260115
-  //       })
-  //       .qualityMosaic('gediLS_dayDiff') 
-  //     return finalGedi_v2.addBands(lsPrep_wIndicies)
-  //   })
-  // print(gediMasterLS," >>>>>> gediMasterLS Joined")
-  // // Convert Collection to mosaic
-  // // This will select the pixel with the highest agbd if they overlap
-  // gediMasterLS = gediMasterLS.qualityMosaic('agbd')//.clip(Validation04)
-  // print(gediMasterLS," >>>>>> gediMasterLS Joined Quality Mosaic AGDB")
-  
-  // Map.addLayer(gediMasterLS,{},"gediMasterLS CHECK")
-  
-  // // Filter to the exact date you want to validate
-  
-  
-  // // Convert 20190429 -> ee.Date('2019-04-29')
-  // var targetDate = ee.Date.parse('YYYY-MM-dd', '2019-04-29');
-  
-  // // Filter using the image's actual date property
-  // var targetLS = lsPrep_wIndicies.filter(
-  //   ee.Filter.date(targetDate, targetDate.advance(1, 'day'))
-  // ).first();
-  
-  
-  // print(targetLS,"targetLS")
-  
-  // getImagesLib.exportToDriveWrapper(
-  //   targetLS.float(),
-  //   'TEST_Landsat_Date20190429_v99',
-  //   'testImg',
-  //   args.studyArea,
-  //   null,
-  //   args.crs,
-  //   args.transform,
-  //   -32768);
-  
-  
-  
-  
-  ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//
-//             GEDI + Landsat Fusion - Join GEDI with Closest Valid Landsat Scene
-//
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-
-
-  
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//
-//             GEDI + Landsat Fusion - Join GEDI with Closest Valid Landsat Scene
-//
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-  // // ============================================
-  // // 1. DEFINE INPUT VARIABLES (Set these first)
-  // // ============================================
-  
-  // // Your preprocessed data (assumed to be defined elsewhere)
-  // // var finalGedi_v2 = ... // GEDI ImageCollection with AGBD
-  // // var lsPrep_wIndicies = ... // Landsat ImageCollection with spectral bands
-  // // var AOI = ... // Study area geometry
-  
-  // // Projection parameters (GEDI native in your study area)
-  // var imgCRS = 'EPSG:32610';
-  // var imgTransform = [25, 0, 248650, 0, -25, 5323275];
-  // var imgScale = 25;
-  
-  // // Export parameters (set these for your export)
-  // var outName = 'gedi_landsat_fusion';
-  // var outDir = 'GEE_Exports';
-  // var dateToday = ee.Date(Date.now()).format('YYYYMMdd').getInfo();
-  
-  // // ============================================
-  // // 2. ADD DATE BANDS TO COLLECTIONS
-  // // ============================================
-  
-  // // Add date band to GEDI (format: YYYYMMDD as integer)
-  // var addDateGEDI = function(im){
-  //   var doy = im.date().format('YYYYMMdd');
-  //   var doyBand = ee.Image.constant(ee.Number.parse(doy)).rename('gediDate').toInt();
-  //   return im.addBands(doyBand);
-  // };
-  
-  // // Add date band to Landsat (format: YYYYMMDD as integer)
-  // var addLSDate = function(im){
-  //   var doy = im.date().format('YYYYMMdd');
-  //   var doyBand = ee.Image.constant(ee.Number.parse(doy)).rename('lsDate').toInt();
-  //   return im.addBands(doyBand);
-  // };
-  
-  // // Map date functions to collections
-  // var gediWithDates = finalGedi_v2.map(addDateGEDI);
-  // var lsWithDates = lsPrep_wIndicies.map(addLSDate);
-  
-  // // ============================================
-  // // 3. REPROJECT LANDSAT TO GEDI GRID
-  // // ============================================
-  
-  // // Reproject Landsat to align with GEDI's 25m grid
-  // var lsAligned = lsWithDates.map(function(image) {
-  //   return image
-  //     .reproject({
-  //       crs: imgCRS,
-  //       crsTransform: imgTransform,
-  //     });
-  // });
-  
-  // print(lsAligned.limit(1), 'Sample Landsat Image (Reprojected to GEDI Grid)');
-  
-  // // ============================================
-  // // 4. DEFINE JOIN FILTERS
-  // // ============================================
-  
-  // // Maximum time difference: 20 days
-  // var maxDiffFilter = ee.Filter.maxDifference({
-  //   difference: 20 * 24 * 60 * 60 * 1000, // 20 days in milliseconds
-  //   leftField: 'system:time_start',
-  //   rightField: 'system:time_start'
-  // });
-  
-  // // Spatial intersection with 30m tolerance (appropriate for 25m GEDI + 30m Landsat)
-  // var intersects = ee.Filter.intersects({
-  //   leftField: '.geo',
-  //   rightField: '.geo',
-  //   maxError: 30 // 30 meters tolerance
-  // });
-  
-  // // ============================================
-  // // 5. JOIN GEDI WITH LANDSAT
-  // // ============================================
-  
-  // // Join: For each GEDI image, find all Landsat images within 20 days that intersect
-  // var gediWithLandsat = ee.ImageCollection(
-  //   ee.Join.saveAll({matchesKey: 'matchedLandsat'})
-  //     .apply({ 
-  //       primary: gediWithDates,
-  //       secondary: lsAligned,
-  //       condition: ee.Filter.and(maxDiffFilter, intersects)
-  //     })
-  // );
-  
-  // print(gediWithLandsat.limit(5), 'GEDI with Matched Landsat (first 5)');
-  
-  // // ============================================
-  // // 6. SELECT CLOSEST VALID LANDSAT FOR EACH GEDI
-  // // ============================================
-  
-  // // For each GEDI image, select the temporally closest Landsat image that has valid (unmasked) data
-  // var gediMasterLS = gediWithLandsat.map(function(gediImage) {
-    
-  //   // Get all matched Landsat images for this GEDI image
-  //   var matchedLS = ee.ImageCollection.fromImages(
-  //     ee.List(gediImage.get('matchedLandsat'))
-  //   );
-    
-  //   // Add a band representing time difference (negative so closer = higher quality)
-  //   var lsWithQuality = matchedLS.map(function(lsImage) {
-      
-  //     // Calculate absolute day difference between GEDI and Landsat
-  //     var dayDiff = ee.Image(
-  //       lsImage.date()
-  //         .difference(gediImage.date(), 'day')
-  //         .abs()
-  //         .multiply(-1) // Negative so qualityMosaic picks closest
-  //     ).rename('gediLS_dayDiff').toInt();
-      
-  //     // Store metadata as bands so they survive qualityMosaic
-  //     // Convert date to integer band (YYYYMMDD format)
-  //     var lsDateBand = ee.Image.constant(
-  //       ee.Number.parse(lsImage.date().format('YYYYMMdd'))
-  //     ).rename('ls_date_int').toInt();
-      
-  //     // Only keep Landsat images with valid (unmasked) data
-  //     // Mask out images where blue band is masked (indicating invalid data)
-  //     return lsImage
-  //       .addBands(dayDiff)
-  //       .addBands(lsDateBand)
-  //       .updateMask(lsImage.select('blue').mask());
-  //   });
-    
-  //   // Select the Landsat image with the smallest time difference (highest quality)
-  //   // This automatically handles the case where closest is masked - it picks next closest valid
-  //   var closestValidLS = lsWithQuality.qualityMosaic('gediLS_dayDiff');
-    
-  //   // Extract metadata from the mosaic bands (these survived!)
-  //   var lsDateInt = closestValidLS.select('ls_date_int');
-  //   var dayDiff = closestValidLS.select('gediLS_dayDiff');
-    
-  //   // Add Landsat bands to GEDI image and preserve metadata
-  //   return gediImage
-  //     .addBands(closestValidLS)
-  //     .set('gedi_id', gediImage.get('system:index'))
-  //     .set('gedi_date_acquired', gediImage.date().format('YYYY-MM-dd'))
-  //     .set('gedi_date_int', ee.Number.parse(gediImage.date().format('YYYYMMdd')));
-    
-  //   // Note: ls_id and exact ls_date_acquired cannot be preserved through qualityMosaic
-  //   // They're available as bands (ls_date_int, gediLS_dayDiff) in the final export
-  // });
-  
-  // print(gediMasterLS.limit(5), 'GEDI with Closest Valid Landsat (first 5)');
-  
-  // // ============================================
-  // // 7. FILTER OUT GEDI POINTS WITHOUT VALID LANDSAT MATCHES
-  // // ============================================
-  
-  // // Remove GEDI images that didn't find any valid Landsat within 20 days
-  // // Check if ls_date_int band exists (it won't if no valid Landsat was found)
-  // var gediMasterLS_filtered = gediMasterLS.map(function(image) {
-  //   var bandNames = image.bandNames();
-  //   var hasLandsat = bandNames.contains('ls_date_int');
-  //   return image.set('has_landsat', hasLandsat);
-  // }).filter(ee.Filter.eq('has_landsat', true));
-  
-  // print(gediMasterLS_filtered.size(), 'Number of GEDI images with valid Landsat matches');
-  
-  // // ============================================
-  // // 8. SAMPLE POINTS FROM COLLECTION
-  // // ============================================
-  
-  // // Sample points from the joined collection
-  // // NOTE: We're sampling the COLLECTION, not a mosaic, to preserve individual GEDI-Landsat pairs
-  // var sampled_points = gediMasterLS_filtered.map(function(image) {
-  //   return image.sample({
-  //     region: AOI, // Sample only this GEDI footprint
-  //     scale: imgScale,
-  //     projection: imgCRS,
-  //     geometries: true
-  //   }).map(function(feature) {
-  //     // Copy image properties to each sampled point
-  //     return feature.copyProperties(image, [
-  //       'gedi_id', 
-  //       'gedi_date_acquired', 
-  //       'ls_id', 
-  //       'ls_date_acquired',
-  //       'gediDate',
-  //       'lsDate'
-  //     ]);
-  //   });
-  // }).flatten(); // Flatten collection of feature collections into single feature collection
-  
-  // print(sampled_points.limit(10), 'Sampled Points (first 10)');
-  
-  // // ============================================
-  // // 9. ADD COORDINATES AND CREATE UNIQUE ID
-  // // ============================================
-  
-  // var featColExport = sampled_points.map(function(feature) {
-    
-  //   // Get coordinates in the specified CRS
-  //   var coordinates = feature.geometry().transform(imgCRS).coordinates();
-  //   var lon = ee.Number(coordinates.get(0));
-  //   var lat = ee.Number(coordinates.get(1));
-    
-  //   // Create simple unique ID from GEDI ID and coordinates
-  //   var uniqid = ee.String(feature.get('gedi_id'))
-  //     .cat('_')
-  //     .cat(lon.format('%.6f'))
-  //     .cat('_')
-  //     .cat(lat.format('%.6f'));
-    
-  //   // Extract Landsat date from the band value (it's stored as integer YYYYMMDD)
-  //   var lsDateInt = ee.Number(feature.get('ls_date_int'));
-  //   var gediDateInt = ee.Number(feature.get('gedi_date_int'));
-    
-  //   // Calculate day difference
-  //   var dayDiff = ee.Number(feature.get('gediLS_dayDiff')).abs();
-    
-  //   // Add coordinate and ID properties
-  //   var result = feature.set({
-  //     'lon': lon,
-  //     'lat': lat,
-  //     'uniqid': uniqid,
-  //     'ls_date_int': lsDateInt,
-  //     'day_difference': dayDiff
-  //   });
-    
-  //   // Remove geometry for CSV export (keeps file size smaller)
-  //   return result.setGeometry(null);
-  // });
-  
-  // print(featColExport.limit(10), 'Final Export Feature Collection (first 10)');
-  
-  // // ============================================
-  // // 10. EXPORT TO GOOGLE DRIVE
-  // // ============================================
-  
-  // Export.table.toDrive({
-  //   collection: featColExport,
-  //   description: outName + '_' + dateToday,
-  //   folder: outDir,
-  //   fileFormat: 'CSV',
-  //   selectors: [
-  //     'uniqid',
-  //     'lon',
-  //     'lat',
-  //     'gedi_id',
-  //     'gedi_date_acquired',
-  //     'gedi_date_int',
-  //     'ls_date_int',
-  //     'day_difference',
-  //     'agbd', // Add your GEDI bands here
-  //     'blue', 'green', 'red', 'nir', 'swir1', 'swir2', // Add your Landsat bands here
-  //     'gediLS_dayDiff'
-  //   ]
-  // });
-  
-  // print('Export task created. Check the Tasks tab to run it.');
   
   // =======================================================
 // 1. PREPARATION
@@ -1272,8 +772,8 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
     'TEST_Landsat_Date20190429_v99_NearestNoSnap',
     'testImg',
     AOI,
-    args.scale,
-    args.crs,
+    30,
+    'EPSG:32610',
     null,
     // args.transform,
     -32768);
