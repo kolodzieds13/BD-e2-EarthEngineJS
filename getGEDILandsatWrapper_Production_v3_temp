@@ -29,7 +29,8 @@ print(Kenobi_TileIDs,"Kenobi_TileIDs")
 
 
 //Module imports
-var getImagesLib = require('users/aaronkamoske/GTAC-Modules:getImagesLib.js');
+// var getImagesLib = require('users/aaronkamoske/GTAC-Modules:getImagesLib.js');
+var getImagesLib = require('users/rcr-training/geeViz-js:getImagesLib.js');
 
 var yearToday = new Date().toLocaleString("en-US",{timeZone:"America/Denver",year:"numeric"})
 var monthToday = new Date().toLocaleString("en-US",{timeZone:"America/Denver",month:"2-digit"})
@@ -117,7 +118,7 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
   // Select Projection
   var imgCRS = 'EPSG:32610' //5070 / 32610
   // Select Scale: Desired resolution of data.
-  var imgScale = 25//null
+  var imgScale = 30//null
   // Select Transform. Transform is used to ensure proper snapping to other datasets
   var imgTransform = null//[25, 0, 248650, 0, -25, 5323275]//[30,0,-2361915,0,-30,3177735]
   
@@ -680,10 +681,10 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
   //   return reprojImg
   // }
   
-  var landsatReprj = function(img){
-    var reprojImg = img.resample('near')
-    return reprojImg
-  }
+  // var landsatReprj = function(img){
+  //   var reprojImg = img.resample('nearest')
+  //   return reprojImg
+  // }
   
   // var landsatReprj = function(img){
   //   var reprojImg = img.reproject({crs:imgCRS, crsTransform:imgTransform})
