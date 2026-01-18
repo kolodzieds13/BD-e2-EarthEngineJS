@@ -1177,8 +1177,8 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
     var matchColWithDiff = matchCol.map(function (lsImg) {
       
 
-      // var doy = lsImg.date().format('YYYYMMdd');
-      // var doyBand = ee.Image.constant(ee.Number.parse(doy)).rename('lsDate')
+      var doy = lsImg.date().format('YYYYMMdd');
+      var doyBand = ee.Image.constant(ee.Number.parse(doy)).rename('lsDate')
       
       var timeDiff = lsImg.date()
         .difference(gediImg.date(), 'day')
@@ -1190,7 +1190,7 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
         .multiply(-1)
         .rename('timeMatchQuality');
       
-      return lsImg.addBands(qualityBand)//.addBands(doyBand)
+      return lsImg.addBands(qualityBand).addBands(doyBand)
                   .float()
                   // Update mask: Only keep pixels where Landsat is valid (e.g. not cloud masked)
                   .updateMask(lsImg.select('blue').mask()); 
@@ -1202,7 +1202,7 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
   
     // 4. Combine GEDI + Best Landsat
     // We explicitly select the bands we want to avoid clutter, but ensure dates are included
-    return gediImg.addBands(bestLandsat); 
+    return gediImg.addBands(bestLandsat).clip(AOI); 
   });
   
   // =======================================================
@@ -1239,7 +1239,7 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
     description: "GEDI_Landsat_Joined_v3_WithCoords_Bicubic",
     folder: 'testImg', // [cite: 1]
     fileFormat: 'CSV',
-    selectors: ['agbd', 'gediDate', 'latitude', 'longitude', 'blue', 'red', 'nir', 'swir1', 'swir2'] 
+    selectors: ['agbd', 'gediDate','lsDate', 'latitude', 'longitude', 'blue', 'red', 'nir', 'swir1', 'swir2'] 
     // ^ Explicitly list columns to ensure order and exclude junk bands like 'timeMatchQuality'
   });
   
