@@ -556,6 +556,7 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
   var lsPrep_wIndicies = l8.merge(l9)
     .filterBounds(AOI)
     .filterDate(startYear, endYear)
+    .filter(ee.Filter.lt('CLOUD_COVER', 80))
     .map(maskCloudsC2)         // 1. Mask Clouds on Raw DN
     .map(applyTOAConversion)   // 2. Convert to TOA
     // .map(addLSDate)            // 3. Add Date
