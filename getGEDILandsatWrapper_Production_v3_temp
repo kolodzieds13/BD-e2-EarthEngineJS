@@ -1208,7 +1208,7 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
   
     // 4. Combine GEDI + Best Landsat
     // We explicitly select the bands we want to avoid clutter, but ensure dates are included
-    return gediImg.addBands(bestLandsat).clip(AOI.geometry().buffer(100)); 
+    return gediImg.addBands(bestLandsat).clip(AOI.geometry().bounds(100,'EPSG:32610')); 
   });
   
   // =======================================================
@@ -1244,7 +1244,7 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
   // Export
   Export.table.toDrive({
     collection: table,
-    description: "GEDI_Landsat_Joined_v3_WithCoords_NearestNoSnap",
+    description: "GEDI_Landsat_Joined_v3_WithCoords_NearestNoSnap_FinalTest",
     folder: 'testImg', // [cite: 1]
     fileFormat: 'CSV',
     selectors: ['agbd', 'gediDate','lsDate', 'latitude', 'longitude', 'blue', 'red', 'nir', 'swir1', 'swir2'] 
@@ -1268,7 +1268,7 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
   
   getImagesLib.exportToDriveWrapper(
     targetLS.float(),
-    'TEST_Landsat_Date20190429_v99_NearestNoSnap',
+    'TEST_Landsat_Date20190429_v99_NearestNoSnap_FinalTest',
     'testImg',
     AOI,
     args.scale,
