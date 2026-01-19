@@ -1,0 +1,1219 @@
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//                GET GEDI Data
+//
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+//
+// var tiles = ee.Feature('projects/ee-kolodzieds13/assets/GEDI_EE_Kenobi_TileSchema_FINAL')
+var Kenobi_TileSchema_v5 = ee.FeatureCollection('projects/ee-kolodzieds13/assets/GEDI_EE_Kenobi_tileSchema_v5')
+
+var Kenobi_TileIDs =ee.List.sequence(13,13).getInfo() //0,47
+// var Kenobi_TileIDs =ee.List.sequence(0,37).getInfo() //0,47 For v10
+// var Kenobi_TileIDs =[6,7,31,32]
+// var Kenobi_TileIDs =[111]
+
+// var Kenobi_TileIDs =ee.List.sequence(100,125).getInfo()
+
+print(Kenobi_TileIDs,"Kenobi_TileIDs")
+
+// var getImagesLib = require('users/Kolodzieds13/GEDI_Emerald_Edge_Analysis_Refresh:getImages_ArgusGeo');
+
+// Import AOI geometry. This could be an import shapefile.
+// var testAOI = ee.Geometry.Polygon(
+//         [[[-124.1908214570261, 48.01747940426768],
+//           [-124.1908214570261, 47.88318938949384],
+//           [-123.93401603710423, 47.88318938949384],
+//           [-123.93401603710423, 48.01747940426768]]], null, false);
+
+
+
+//Module imports
+// var getImagesLib = require('users/aaronkamoske/GTAC-Modules:getImagesLib.js');
+var getImagesLib = require('users/rcr-training/geeViz-js:getImagesLib.js');
+
+var yearToday = new Date().toLocaleString("en-US",{timeZone:"America/Denver",year:"numeric"})
+var monthToday = new Date().toLocaleString("en-US",{timeZone:"America/Denver",month:"2-digit"})
+var dayToday = new Date().toLocaleString("en-US",{timeZone:"America/Denver",day:"2-digit"})
+
+var dateToday = yearToday+monthToday+dayToday
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//                GEDI Parameters
+//
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// Select GEDI sensitivity
+// Higher Sensity equals greater variability in agbd.
+// 0.95 is more commonly used to broad uses but it is generally prefered to used 0.98
+var sensitivityThres = 0.98
+// Select Beam Type: Options are 'cover','power', or 'all'
+// Power beams are 'stronger' and results in more accurate measurement. However, power beams
+// may be limited and thus it may be better to include all observations 'all'
+var beamType = 'all'
+// Select solor elevation threshold. Filter applies less than condition.
+// i.e. 0 indicated solar-elevation less than 0; indicating night time observation
+var solarElevThres = 0
+
+// Apply NDVI/Canopy Cover Filter
+// Warning: This technique calculates StDev on the fly and only within the AOI. If you need to split the aoi
+// then the results may not be consistent
+var applyNDVIFilter = false
+// Add SRTM Elevation Data
+// Generally recommended as elevation is often important when modeling agbd
+var addElevation = true
+// Add GLCM EVI Data:
+// This will apply a GLCM analysis against "EVI" for all Landsat Images. Can be important but will add significant processing time!
+var addGLCMEVI = false
+// This will apply a GLCM analysis against "EVI" for all Landsat Images. Can be important but will add significant processing time!
+var addGLCMvarNIR = true
+
+var addGLCMconSWIR1 = true
+// Desired LandsatBands
+// If True, GEDI observation will only record values of blue,green,red,nir,swir1,swir2,NDVI,and EVI
+// This is ideal to minimize GEE computations
+// Select False to include all bands and indices (Band Dictionary located line 150)
+var simpleLandsat = true
+// Add ESA Landcover
+// This adds ESA World Cover 2021 v200. 
+var addESALandcover = true
+// Add ESA Forest Types 2019
+// Add Forest Types (e.g Broadleave Needle)
+var addESAForestTypes = true
+// Add JRC Broad Forest Types
+// This will add Primary Forest, Regen Forest, Plantation, Forest
+var addJRCGlobalForestTypes = true
+// Add Hansen Tree Loss
+// This adds hansen tree loss information. 
+var addHansenTreeLoss = true
+// Add HAND Hydrology
+var addHANDHydro = true
+// Add Flow Index
+var addFlowIndex = true
+
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//                Image Parameters Data
+//
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
+ 
+  
+  // Select Start and End Days (in Julian Days)
+  var startJulian = 1
+  var endJulian = 180//365
+  // Select Start and End Years
+  // Note: GEDI Observation are avaliable from 2019 through 2023
+  // Year 2023 only has data till March: endJulian no later than 91
+  var startYear = 2019
+  var endYear= 2019
+  
+  // Define Area of Interest (AOI)
+  // This may need to be broken up if area is too large
+  var AOI = Kenobi_TileSchema_v5.filter(ee.Filter.eq('zoneID',IDs))
+  
+  // Select Projection
+  var imgCRS = 'EPSG:32610' //5070 / 32610
+  // Select Scale: Desired resolution of data.
+  var imgScale = 30//null
+  // Select Transform. Transform is used to ensure proper snapping to other datasets
+  var imgTransform = null//[25, 0, 248650, 0, -25, 5323275]//[30,0,-2361915,0,-30,3177735]
+  
+  ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  //
+  //                Export Parameters
+  //
+  //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  
+  // Name of Output CSV file
+  var outName = 'GEDI_Landsat_Fusion'
+  // Name of Output Directory
+  var outDir = "BDe2_Gamma" //This must be created in Google Drive
+  
+  
+  ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  //
+  //                Functions
+  //
+  //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  
+  //Dropping Degraded Observations
+  var qualityMaskXX = function(im) {
+    var img = im.updateMask(im.select('l4_quality_flag').eq(1))
+    img = img.updateMask(img.select('l2_quality_flag').eq(1))
+    img = img.updateMask(img.select('degrade_flag').eq(0))
+    return img
+  }
+  //Time of Day Observations
+  var solarElevMask = function(im){
+    return im.updateMask(im.select('solar_elevation').lt(solarElevThres))
+  }
+  //Sensitivity Threshold
+  var sensitivityMask = function(im){
+    return im.updateMask(im.select('sensitivity').gte(sensitivityThres))
+  }
+  //Beam Type
+  var beamFilter = function(im){
+    if (beamType == 'power'){
+      return im.updateMask(im.select('beam').gt(3))
+    }
+    if (beamType == 'coverage'){
+      return im.updateMask(im.select('beam').lte(3))
+    }
+    if (beamType == 'all'){
+      return im
+    }
+  }
+  // //GEDI Date YYYYMMdd
+  // var addDateGEDI = function(im){
+  //   var doy = im.date().format('YYYYMMdd');
+  //   var doyBand = ee.Image.constant(ee.Number.parse(doy)).add(ee.Image.constant(1)).rename('gediDate').toInt()
+  //   return im.addBands(doyBand);
+  // };
+  
+  var addDateGEDI = function(im){
+    var doy = im.date().format('YYYYMMdd');
+    var doyBand = ee.Image.constant(ee.Number.parse(doy)).rename('gediDate').toInt()
+    return im.addBands(doyBand);
+  };
+  
+  
+  
+  var addLSDate = function(im){
+    var doy = im.date().format('YYYYMMdd');
+    var doyBand = ee.Image.constant(ee.Number.parse(doy)).rename('lsDate').toInt()
+  
+    return im.addBands(doyBand);
+  };
+  
+  
+  var applyGLCMEVI = function(img){
+    var boxcar = ee.Kernel.square({
+      radius: 2, units: 'pixels', normalize: true
+    });
+        
+    var glcmPrep = img.select('EVI')
+      .multiply(ee.Number(10000))
+      .toInt16()
+      .unitScale(-10000,10000)
+      .multiply(255)
+      .toByte()
+      
+    // Kernel 7 x 7
+    var glcm3 = glcmPrep.glcmTexture({
+      size:3,
+      kernel: ee.Kernel.square({
+      radius: 3, units: 'pixels', normalize: true})
+    })
+    
+    var glcm3_smooth = glcm3.convolve(boxcar).select(bandDictionary['glcm']); 
+    return img.addBands(glcm3_smooth)
+  }
+  
+  var applyGLCMvarNIR = function(img){
+    var boxcar = ee.Kernel.square({
+      radius: 2, units: 'pixels', normalize: true
+    });
+        
+    var glcmPrep = img.select('nir')
+      .multiply(ee.Number(10000))
+      .toInt16()
+      .unitScale(-10000,10000)
+      .multiply(255)
+      .toByte()
+      
+    // Kernel 7 x 7
+    var glcm3 = glcmPrep.glcmTexture({
+      size:2,
+      kernel: ee.Kernel.square({
+      radius: 2, units: 'pixels', normalize: true})
+    })
+    
+    var glcm3_smooth = glcm3.convolve(boxcar).select(bandDictionary['glcmNIR']); 
+    return img.addBands(glcm3_smooth)
+  }
+  
+  var applyGLCMconSWIR1 = function(img){
+    var boxcar = ee.Kernel.square({
+      radius: 2, units: 'pixels', normalize: true
+    });
+        
+    var glcmPrep = img.select('swir1')
+      .multiply(ee.Number(10000))
+      .toInt16()
+      .unitScale(-10000,10000)
+      .multiply(255)
+      .toByte()
+      
+    // Kernel 7 x 7
+    var glcm3 = glcmPrep.glcmTexture({
+      size:2,
+      kernel: ee.Kernel.square({
+      radius: 2, units: 'pixels', normalize: true})
+    })
+    
+    var glcm3_smooth = glcm3.convolve(boxcar).select(bandDictionary['glcmSWIR1']); 
+    return img.addBands(glcm3_smooth)
+  }
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  //
+  //                Band Dictionary
+  //
+  //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  
+  
+  var bandDictionary = {
+    "reflectanceAll":ee.List(["blue","green","red","nir","swir1","swir2","NDVI","NIRv","NBR","NDMI","EVI","SAVI","brightness",
+                    "greenness","wetness","tcAngleBG","tcAngleGW","tcAngleBW","tcDistBG","tcDistGW","tcDistBW"]),
+    "reflectanceSimple":ee.List(["blue","green","red","nir","swir1","swir2","NDVI","EVI","NBR"]), // New add 20260112
+    
+    "glcm":ee.List(['EVI_asm','EVI_contrast','EVI_corr','EVI_var','EVI_idm','EVI_savg','EVI_svar',
+                    'EVI_sent','EVI_ent','EVI_dvar','EVI_dent','EVI_imcorr1','EVI_imcorr2',]),
+              
+    "glcm10k":ee.List(["EVI_asm","EVI_idm","EVI_corr","EVI_sent","EVI_dent","EVI_imcorr1","EVI_imcorr2"]),
+    "glcmDN":  ee.List(["EVI_contrast","EVI_var","EVI_svar","EVI_savg","EVI_dvar"]),
+    "glcmOneThousand" : ee.List(["EVI_ent",]),
+    
+    "glcmNIR":ee.List(['nir_var']),
+    "glcmNIRDN":ee.List(['nir_var']),
+    
+    
+    "glcmSWIR1":ee.List(['swir1_contrast']),
+    "glcmSWIR1DN":ee.List(['swir1_contrast']),
+    
+    
+              
+    
+    
+    
+    
+    "terrain100":ee.List(['slope','tpi11','tpi21','tpi41']),
+    "terrain10k":ee.List(["sinAspect",'cosAspect','HLI']),
+    
+    "gediAll":ee.List(['agbd','agbd_pi_lower','agbd_pi_upper','agbd_se','agbd_t','agbd_t_se',
+                      'l4_quality_flag','l2_quality_flag','degrade_flag','delta_time','solar_elevation','beam','sensitivity',
+                      'rh25','rh50', 'rh75','rh95','rh98','digital_elevation_model','digital_elevation_model_srtm',
+                      'cover','pai']),
+    
+    "gediL4A":ee.List(['agbd','agbd_pi_lower','agbd_pi_upper','agbd_se','agbd_t','agbd_t_se',
+                      'l4_quality_flag','l2_quality_flag','degrade_flag','delta_time',
+                      'solar_elevation','beam','sensitivity']),
+    "gediL2A":ee.List(['delta_time','rh25','rh50', 'rh75','rh95','rh98','elev_lowestmode','digital_elevation_model','digital_elevation_model_srtm']),
+    "gediL2B":ee.List(['delta_time','cover','pai']),
+    
+  }
+  
+  
+  
+  ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  //
+  //                Prepare GEDI Data
+  //
+  //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  
+  // Load Collections
+  
+  var GEDI_L2A = ee.ImageCollection('LARSE/GEDI/GEDI02_A_002_MONTHLY')
+    .filterBounds(AOI)
+    .filter(ee.Filter.calendarRange(startYear,endYear,'year'))
+    .filter(ee.Filter.calendarRange(startJulian,endJulian))
+  var GEDI_L2B = ee.ImageCollection('LARSE/GEDI/GEDI02_B_002_MONTHLY')
+    .filterBounds(AOI)
+    .filter(ee.Filter.calendarRange(startYear,endYear,'year'))
+    .filter(ee.Filter.calendarRange(startJulian,endJulian))
+  var GEDI_L4A = ee.ImageCollection('LARSE/GEDI/GEDI04_A_002_MONTHLY')
+    .filterBounds(AOI)
+    .filter(ee.Filter.calendarRange(startYear,endYear,'year'))
+    .filter(ee.Filter.calendarRange(startJulian,endJulian))
+  
+  print('GEDI_L2A',GEDI_L2A.first())
+  print('GEDI_L2B',GEDI_L2B.first())
+  print('GEDI_L4A',GEDI_L4A.first())
+  
+  // Indicate Desired Bands
+  
+  // var GEDI_L2A_Selection = ['delta_time','rh25','rh50', 'rh75','rh95','rh98','digital_elevation_model','digital_elevation_model_srtm']
+  // var GEDI_L2B_Selection = ['delta_time','cover','pai']
+  // var GEDI_L4A_Selection = ['delta_time','agbd','l4_quality_flag','l2_quality_flag','degrade_flag','solar_elevation','beam','sensitivity']
+  
+  var modL2A = GEDI_L2A.select(bandDictionary['gediL2A'])
+  var modL2B = GEDI_L2B.select(bandDictionary['gediL2B'])
+  GEDI_L4A = GEDI_L4A.select(bandDictionary['gediL4A'])
+  
+  // https://gis.stackexchange.com/questions/376961/is-there-a-way-to-merge-imagecollections-in-earth-engine-without-the-systemind
+  
+  // Merge Collections
+  
+  var GEDI_L2Coll = ee.ImageCollection(
+    ee.Join.saveAll({matchesKey: 'join'}) // This creates a new field in properties
+      // Add an 's1' property to each s2 image, with a list of s1 imagery from within 16 days
+      .apply({ 
+        primary: modL2A, 
+        secondary: modL2B, //GEDI_L2B
+        condition:
+          ee.Filter.equals({leftField: 'system:index', rightField: 'system:index'}) // Change from delta_time to system index
+      })
+    )
+  
+  // GEDI_L2Coll = GEDI_L2Coll 
+    .map(function (modL2A) {
+      var modL2B = ee.ImageCollection.fromImages(
+          ee.List(modL2A.get('join'))
+        )
+        .map(function (modL2B) {
+          var quality = ee.Image(
+              modL2B.date()
+                .difference(modL2A.date(), 'day')
+                .abs()
+                .multiply(-1)
+            )
+            .rename('L2AL2B_dateDiff') // -(number of days from the image)
+          return modL2B
+            .addBands(quality)
+            .float()
+        })
+        .qualityMosaic('L2AL2B_dateDiff')
+  
+      return modL2A.addBands(modL2B)
+    })
+  
+  // // Display Results  
+  // Map.addLayer(GEDI_L2Coll,{},"GEDI_L2Coll")
+  // print(GEDI_L2Coll,"GEDI_L2Coll")
+  
+  var gediMaster = ee.ImageCollection(
+    ee.Join.saveAll({matchesKey: 'join02'})
+      // Add an 'GEDI L2' property to each GEDI l4A image, with a list of s1 imagery from within 16 days
+      .apply({ 
+        primary: GEDI_L4A, 
+        secondary: GEDI_L2Coll, //GEDI_L2B
+        condition:
+          ee.Filter.equals({leftField: 'system:index', rightField: 'system:index'}) //IMPORTANT : Maybe shot_number instead?
+      })
+    )
+    // Add the s1 band (a mosaica from the pixels closest to the s2 image)
+  // print(gediMaster,"gediMaster")  
+  gediMaster = gediMaster 
+    .map(function (GEDI_L4A) {
+      var GEDI_L2Coll_img = ee.ImageCollection.fromImages(
+          ee.List(GEDI_L4A.get('join02'))
+        )
+        .map(function (GEDI_L2Coll_img) {
+          var quality = ee.Image(
+              GEDI_L2Coll_img.date()
+                .difference(GEDI_L4A.date(), 'day')
+                .abs()
+                .multiply(-1)
+            )
+            .rename('L2L4A_dateDiff') // -(number of days from the s2 image)
+          return GEDI_L2Coll_img
+            .addBands(quality)
+            .float()
+            // // .updateMask(GEDI_L4A.select('cover').mask()) //GEDI_L2B_Attribution.reduce('sum').gte(1))//
+        })
+        .qualityMosaic('L2L4A_dateDiff') // Review Later do i need quality mosaic()
+        // .first()
+      return GEDI_L4A.addBands(GEDI_L2Coll_img)
+  
+    })
+  
+  var addLatLon = function(img){
+    var latLon = ee.Image.pixelLonLat(); // Adds 'latitude' and 'longitude' bands
+    return img.addBands(latLon);
+  };
+  
+  // Get Final GEDI Product
+  
+  var finalGedi_v2 = gediMaster.map(qualityMaskXX)
+  finalGedi_v2 = finalGedi_v2.map(solarElevMask)
+  finalGedi_v2 = finalGedi_v2.map(sensitivityMask)
+  finalGedi_v2 = finalGedi_v2.map(beamFilter)
+  finalGedi_v2 = finalGedi_v2.map(addLatLon)
+  finalGedi_v2 = finalGedi_v2.map(addDateGEDI)
+  
+  // finalGedi_v2 = finalGedi_v2.map(reprojectGEDI)
+  
+  
+  
+  
+  print(finalGedi_v2,"gediMaster")
+  Map.addLayer(finalGedi_v2,{},"gediMaster FINAL")
+  
+  
+  
+  // Define a max difference filter to compare timestamps.
+  var maxDiffFilter = ee.Filter.maxDifference({
+    difference: 20 * 24 * 60 * 60 * 1000, // first value ('20') is the number of days
+    leftField: 'system:time_start',
+    rightField: 'system:time_start'
+  });
+  
+  var intersects = ee.Filter.intersects({
+    leftField: '.geo',
+    rightField: '.geo',
+    maxError: 10
+  });
+  
+  
+  //////////////////////////////////////////////////
+  //
+  //      NEW
+  //
+  //////////////////////////////////////////////////
+// =======================================================
+// 1. DEFINE PARAMETERS
+// =======================================================
+
+  var startYear = '2019-01-01';
+  var endYear = '2019-12-31';
+  
+  // Define your AOI 
+  // var AOI = ... 
+  
+  // =======================================================
+  // 2. HELPER FUNCTIONS
+  // =======================================================
+  
+  /**
+   * Mask clouds/shadows on Raw DN data (Level 1)
+   */
+  var maskCloudsC2 = function(image) {
+    var qa = image.select('QA_PIXEL');
+    // Bit 1: Dilated Cloud, Bit 3: Cloud, Bit 4: Cloud Shadow
+    var mask = qa.bitwiseAnd(1 << 1).eq(0)
+          .and(qa.bitwiseAnd(1 << 3).eq(0))
+          .and(qa.bitwiseAnd(1 << 4).eq(0));
+    return image.updateMask(mask);
+  };
+  
+  /**
+   * Convert Raw DN to TOA Reflectance
+   * Formula: ((DN * 0.0000275) - 0.2) / sin(SunElevation)
+   */
+  var applyTOAConversion = function(image) {
+    // 1. Apply Scale Factors
+    var opticalBands = image.select(['B2', 'B3', 'B4', 'B5', 'B6', 'B7'])
+                            .multiply(0.0000275).add(-0.2);
+                            
+    // 2. Correct for Sun Elevation
+    var sunElevation = ee.Number(image.get('SUN_ELEVATION'));
+    var sunElevRad = sunElevation.multiply(Math.PI).divide(180);
+    
+    // 3. Calculate TOA and Clamp
+    // CRITICAL: We clamp to [0, 1]. EVI math fails if values are negative.
+    var toaReflectance = opticalBands.divide(sunElevRad.sin())
+                                     .clamp(0, 1); 
+  
+    return image.addBands(toaReflectance, null, true)
+                .copyProperties(image, ['system:time_start', 'SUN_ELEVATION']);
+  };
+  
+  /**
+   * Add Date Band
+   */
+  // var addLSDate = function(image){
+  //   var doy = image.date().format('YYYYMMdd');
+  //   var doyBand = ee.Image.constant(ee.Number.parse(doy)).rename('lsDate').toInt();
+  //   return image.addBands(doyBand);
+  // };
+  
+  /**
+   * Add Spectral Indices (NDVI, EVI, NBR)
+   * Requires bands to be renamed to 'red', 'nir', 'blue', 'swir2' first.
+   */
+  var addIndices = function(image) {
+    // 1. NDVI = (NIR - Red) / (NIR + Red)
+    var ndvi = image.normalizedDifference(['nir', 'red']).rename('NDVI');
+    
+    // 2. EVI = 2.5 * ((NIR - Red) / (NIR + 6 * Red - 7.5 * Blue + 1))
+    var evi = image.expression(
+      '2.5 * ((NIR - RED) / (NIR + 6 * RED - 7.5 * BLUE + 1))', {
+        'NIR': image.select('nir'),
+        'RED': image.select('red'),
+        'BLUE': image.select('blue')
+      }).rename('EVI');
+  
+    // 3. NBR = (NIR - SWIR2) / (NIR + SWIR2)
+    // Standard index for burn severity and biomass disturbance.
+    var nbr = image.normalizedDifference(['nir', 'swir2']).rename('NBR');
+  
+    return image.addBands([ndvi, evi, nbr]);
+  };
+  
+  // =======================================================
+  // 3. MAIN PROCESSING CHAIN
+  // =======================================================
+  
+  // var l8 = ee.ImageCollection("LANDSAT/LC08/C02/T1");
+  // var l9 = ee.ImageCollection("LANDSAT/LC09/C02/T1");
+  
+  var l8 = ee.ImageCollection("LANDSAT/LC08/C02/T1_TOA");
+  var l9 = ee.ImageCollection("LANDSAT/LC09/C02/T1_TOA");
+  
+  var lsPrep_wIndicies = l8.merge(l9)
+    .filterBounds(AOI)
+    .filterDate(startYear, endYear)
+    .filter(ee.Filter.lt('CLOUD_COVER', 80))
+    .map(maskCloudsC2)         // 1. Mask Clouds on Raw DN
+    .map(applyTOAConversion)   // 2. Convert to TOA
+    // .map(addLSDate)            // 3. Add Date
+    .select(['B2', 'B3', 'B4', 'B5', 'B6', 'B7'], 
+            ['blue', 'green', 'red', 'nir', 'swir1', 'swir2']) // 4. Rename
+    .map(addIndices);          // 5. Calculate Indices (Must happen AFTER Rename)
+  
+  // =======================================================
+  // 4. DIAGNOSTICS & NEXT STEPS
+  // =======================================================
+  
+  print("Final Collection Size:", lsPrep_wIndicies.size());
+  
+  // Add to map to verify EVI isn't broken (should be mostly gray/white/green)
+  var indexVis = {min: 0, max: 1, palette: ['white', 'green']};
+  Map.addLayer(lsPrep_wIndicies.select('EVI').median().clip(AOI), indexVis, 'Median EVI');
+    
+  
+  if (simpleLandsat){
+    lsPrep_wIndicies=lsPrep_wIndicies.select(bandDictionary['reflectanceSimple']) //'lsDate'
+  } else {
+    lsPrep_wIndicies=lsPrep_wIndicies.select(bandDictionary['reflectanceAll']) //'lsDate'
+  }
+  
+
+  // lsPrep_wIndicies = lsPrep_wIndicies.map(landsatReprj)
+  
+  var tempProj = lsPrep_wIndicies.first().select('blue').projection().getInfo()
+  print(tempProj.crs, 'Projection CRS')
+  print(tempProj.wkt, 'Projection WKT')
+  print(tempProj.transform, 'Projection Transform')
+
+    
+  
+  //////////////////////////////////////////////////////////////////
+  //
+  //             Add GLCM
+  //
+  /////////////////////////////////////////////////////////////////
+  
+  
+  if (addGLCMEVI){
+    lsPrep_wIndicies = lsPrep_wIndicies.map(applyGLCMEVI)
+  }
+  print("Landsat Band Names",lsPrep_wIndicies.first().bandNames())
+  
+  //////////////////////////////////////////////////////////////////
+  //
+  //             Add NIR GLCM
+  //
+  /////////////////////////////////////////////////////////////////
+  
+  
+  if (addGLCMvarNIR){
+    lsPrep_wIndicies = lsPrep_wIndicies.map(applyGLCMvarNIR)
+  }
+  print("Landsat Band Names",lsPrep_wIndicies.first().bandNames())
+  
+  //////////////////////////////////////////////////////////////////
+  //
+  //             Add SWIR1 GLCM
+  //
+  /////////////////////////////////////////////////////////////////
+  
+  
+  if (addGLCMconSWIR1){
+    lsPrep_wIndicies = lsPrep_wIndicies.map(applyGLCMconSWIR1)
+  }
+  print("Landsat Band Names",lsPrep_wIndicies.first().bandNames())
+  
+  // Add Date to Landsat
+  
+  // lsPrep_wIndicies = lsPrep_wIndicies.map(addLSDate)
+  
+
+  
+  // =======================================================
+// 1. PREPARATION
+// =======================================================
+
+  // Define the Max Difference Filter (20 days)
+  var maxDiffFilter = ee.Filter.maxDifference({
+    difference: 20 * 24 * 60 * 60 * 1000, 
+    leftField: 'system:time_start',
+    rightField: 'system:time_start'
+  });
+  
+  // Define the Intersects Filter
+  var intersects = ee.Filter.intersects({
+    leftField: '.geo',
+    rightField: '.geo',
+    maxError: 10 // Adjust based on your projection needs
+  });
+  
+  // Combine Filters
+  var joinFilter = ee.Filter.and(maxDiffFilter, intersects);
+  
+  
+  // =======================================================
+  // 2. EXECUTE JOIN (saveAll)
+  // =======================================================
+  
+  // Join the GEDI collection (primary) with Landsat (secondary)
+  // We use saveAll to get ALL potential matches within 20 days.
+  var gediMasterLS = ee.ImageCollection(
+    ee.Join.saveAll({
+      matchesKey: 'matches'
+    }).apply({ 
+      primary: finalGedi_v2, 
+      secondary: lsPrep_wIndicies, // Assumes this already has 'lsDate' band [cite: 1]
+      condition: joinFilter
+    })
+  );
+  
+  // =======================================================
+  // 3. PROCESS MATCHES (Find Best Valid Pixel)
+  // =======================================================
+  
+  var processedCol = gediMasterLS.map(function (gediImg) {
+    
+    // 1. Get the list of Landsat matches for this specific GEDI image
+    var matchesList = ee.List(gediImg.get('matches'));
+    var matchCol = ee.ImageCollection.fromImages(matchesList);
+    
+    // 2. Calculate time difference for every pixel in every match
+    var matchColWithDiff = matchCol.map(function (lsImg) {
+      
+
+      var doy = lsImg.date().format('YYYYMMdd');
+      var doyBand = ee.Image.constant(ee.Number.parse(doy)).rename('lsDate')
+      
+      var timeDiff = lsImg.date()
+        .difference(gediImg.date(), 'day')
+        .abs(); 
+        
+      // We invert the diff because qualityMosaic prefers higher numbers.
+      // -0 days (best) > -5 days (worst).
+      var qualityBand = ee.Image.constant(timeDiff)
+        .multiply(-1)
+        .rename('timeMatchQuality');
+      
+      return lsImg.addBands(qualityBand).addBands(doyBand)
+                  .float()
+                  // Update mask: Only keep pixels where Landsat is valid (e.g. not cloud masked)
+                  .updateMask(lsImg.select('blue').mask()); 
+    });
+    
+    // 3. Collapse to the single best Landsat pixel
+    // This automatically carries over the 'lsDate' band from the winning pixel
+    var bestLandsat = matchColWithDiff.qualityMosaic('timeMatchQuality');
+  
+    // 4. Combine GEDI + Best Landsat
+    // We explicitly select the bands we want to avoid clutter, but ensure dates are included
+    return gediImg.addBands(bestLandsat).clip(AOI.geometry().buffer(100)); 
+  });
+  
+  // =======================================================
+  // 4. PREPARE FOR EXPORT (Add Lat/Lon)
+  // =======================================================
+  
+  // We map over the processed collection to add Lat/Lon bands to every image
+  var finalCollection = processedCol.map(function(img){
+    var latLon = ee.Image.pixelLonLat(); // Adds 'latitude' and 'longitude' bands
+    return img.addBands(latLon);
+  });
+  
+  // =======================================================
+  // 5. SAMPLING & EXPORT
+  // =======================================================
+  
+  // If you want to sample EVERY valid GEDI pixel without mosaicking them together:
+  // We map .sample() over the collection and flatten the results. 
+  // This is safer than mosaicking if you have overlapping GEDI shots you want to preserve.
+  
+  var roi = AOI.geometry().bounds(100,'EPSG:32610')
+  
+  var table = finalCollection.map(function(img) {
+    return img.sample({
+      region: roi,
+      scale: 25, 
+      projection: 'EPSG:32610', // Force Lat/Lon projection for the CSV coords
+      geometries: false,       // We don't need the geometry column anymore, we have Lat/Lon bands
+      dropNulls: true          // Drops pixels where GEDI or Landsat were masked
+    });
+  }).flatten();
+  
+  // Export
+  Export.table.toDrive({
+    collection: table,
+    description: "GEDI_Landsat_Joined_v3_WithCoords_NearestNoSnap_v99",
+    folder: 'testImg', // [cite: 1]
+    fileFormat: 'CSV',
+    selectors: ['agbd', 'gediDate','lsDate', 'latitude', 'longitude', 'blue', 'red', 'nir', 'swir1', 'swir2'] 
+    // ^ Explicitly list columns to ensure order and exclude junk bands like 'timeMatchQuality'
+  });
+  
+  
+  
+  /// Using T1_TOA
+  
+  // =======================================================
+  // 1. SETUP
+  // =======================================================
+  // var startYear = '2019-01-01';
+  // var endYear = '2019-12-31';
+  
+  // // Function to mask clouds on TOA data (QA_PIXEL works the same)
+  // var maskCloudsTOA = function(image) {
+  //   var qa = image.select('QA_PIXEL');
+  //   // Mask Dilated Cloud (1), Cloud (3), Cloud Shadow (4)
+  //   var mask = qa.bitwiseAnd(1 << 1).eq(0)
+  //         .and(qa.bitwiseAnd(1 << 3).eq(0))
+  //         .and(qa.bitwiseAnd(1 << 4).eq(0));
+  //   return image.updateMask(mask);
+  // };
+  
+  // // Function to add Date
+  // var addLSDate = function(image){
+  //   var doy = image.date().format('YYYYMMdd');
+  //   var doyBand = ee.Image.constant(ee.Number.parse(doy)).rename('lsDate').toInt();
+  //   return image.addBands(doyBand);
+  // };
+  
+  // // Function to add Indices (NDVI, EVI, NBR)
+  // var addIndices = function(image) {
+  //   var ndvi = image.normalizedDifference(['nir', 'red']).rename('NDVI');
+  //   var nbr = image.normalizedDifference(['nir', 'swir2']).rename('NBR');
+  //   var evi = image.expression(
+  //     '2.5 * ((NIR - RED) / (NIR + 6 * RED - 7.5 * BLUE + 1))', {
+  //       'NIR': image.select('nir'),
+  //       'RED': image.select('red'),
+  //       'BLUE': image.select('blue')
+  //     }).rename('EVI');
+  //   return image.addBands([ndvi, nbr, evi]);
+  // };
+  
+  // // =======================================================
+  // // 2. LOAD OFFICIAL TOA COLLECTION
+  // // =======================================================
+  // // We use T1_TOA to get the Per-Pixel Sun Angle correction automatically.
+  // var l8 = ee.ImageCollection("LANDSAT/LC08/C02/T1_TOA");
+  // var l9 = ee.ImageCollection("LANDSAT/LC09/C02/T1_TOA");
+  
+  // var lsPrep = l8.merge(l9)
+  //   .filterBounds(AOI)
+  //   .filterDate(startYear, endYear)
+  //   .filter(ee.Filter.lt('CLOUD_COVER', 80)) // "Sledgehammer" Filter
+  //   .map(maskCloudsTOA)
+  //   .map(addLSDate)
+  //   // Collection 2 TOA is already scaled, NO math needed.
+  //   // Just rename the bands.
+  //   .select(['B2', 'B3', 'B4', 'B5', 'B6', 'B7', 'lsDate'], 
+  //           ['blue', 'green', 'red', 'nir', 'swir1', 'swir2', 'lsDate']) 
+  //   .map(addIndices);
+  
+  // // =======================================================
+  // // 3. JOIN LOGIC (Your existing GEDI Join)
+  // // =======================================================
+  // // ... [Insert your maxDiffFilter and saveAll logic here] ...
+  
+  // // =======================================================
+  // // 4. SAMPLING (The Critical Fix)
+  // // =======================================================
+  
+  // // Assuming 'joinedCollection' is your final stack of GEDI + Landsat
+  // // We sample using the GEDI projection, but without reprojecting Landsat.
+  
+  // var table = joinedCollection.map(function(img) {
+    
+  //   // Explicitly force Nearest Neighbor to avoid any hidden interpolation
+  //   // var imgNN = img.resample('nearest');
+  
+  //   return img.sample({
+  //     region: AOI.buffer(100, 1), 
+      
+  //     // 1. Use GEDI Projection (This aligns the "Pin Drop")
+  //     projection: finalGedi_v2.projection(), 
+      
+  //     // 2. Use GEDI Scale (25m)
+  //     scale: 25, 
+      
+  //     geometries: false,       
+  //     dropNulls: true          
+  //   });
+  // }).flatten();
+  
+  // Export.table.toDrive({
+  //   collection: table,
+  //   description: "GEDI_Landsat_Verified_v1",
+  //   fileFormat: 'CSV'
+  // });
+  
+  
+  
+    // Filter to the exact date you want to validate
+  
+  
+  // Convert 20190429 -> ee.Date('2019-04-29')
+  var targetDate = ee.Date.parse('YYYY-MM-dd', '2019-04-29');
+  
+  // Filter using the image's actual date property
+  var targetLS = lsPrep_wIndicies.filter(
+    ee.Filter.date(targetDate, targetDate.advance(1, 'day'))
+  ).first();
+  
+  
+  print(targetLS,"targetLS")
+  
+  getImagesLib.exportToDriveWrapper(
+    targetLS.float(),
+    'TEST_Landsat_Date20190429_v99_NearestNoSnap_v99',
+    'testImg',
+    AOI,
+    30,
+    'EPSG:32610',
+    null,
+    // args.transform,
+    -32768);
+  
+  
+  
+  
+  ///////////////////////////////////////////////////////////////////////////////////////////////
+  //
+  //               Apply NDVI Filter (Optional)
+  //
+  ///////////////////////////////////////////////////////////////////////////////////////////////
+  
+  if (applyNDVIFilter){
+    print("Applying NDVI + Canopy Cover Filter")
+    
+    var ndvi = gediMasterLS.select('NDVI')
+    var cover = gediMasterLS.select('cover')
+    //Get Adbsolute Difference
+    var geoDiffNDVIprepped = (cover.subtract(ndvi)).abs().rename('geoDiff')
+    
+    var reducers = ee.Reducer.mean().combine({
+      reducer2: ee.Reducer.stdDev(),
+      sharedInputs: true});
+    
+    var stats = geoDiffNDVIprepped.reduceRegion({
+        reducer: reducers,
+        geometry: Validation04,
+        crs: imgCRS,
+        crsTransform: imgTransform,
+        maxPixels: 1e10
+    })
+    
+    var geoDiffMean = ee.Number(stats.get('geoDiff_mean'))
+    var geoDiffSTD = ee.Number(stats.get('geoDiff_stdDev'))
+    
+    var geoDiffFilter = geoDiffNDVIprepped.divide(geoDiffSTD)
+    var geoDiffFilterMask = geoDiffFilter.lt(1) //i.e. less than 1 StDev
+    
+    gediMasterLS = gediMasterLS.updateMask(geoDiffFilterMask)
+  }
+  
+  
+  ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  //
+  //                Apply SRTM Elevation
+  //
+  ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  
+  if (addElevation){
+    print('Adding SRTM Elevation')
+    // grab SRTM Data
+    var srtm = ee.Image("USGS/SRTMGL1_003")
+      .resample("bicubic")
+      .select(['elevation'],['demSRTM'])
+     
+    var PI = ee.Image.constant(ee.Number.expression('Math.PI', null))
+    // grab Aspect
+    var aspect = ee.Terrain.aspect(srtm);
+    // grab Slope
+    var slope = ee.Terrain.slope(srtm)
+    // Grab Folded Aspect
+    var aspectRadians = aspect.multiply(0.0174533)
+    // grab Sin and Cosine Aspect
+    // https://www.researchgate.net/post/How_to_use_aspects_ie_N_NE_SE_etc_in_PCA_or_CCA_for_analysis_especially_using_PAST
+    var sinAspect = aspectRadians.sin().rename("sinAspect")
+    var cosAspect = aspectRadians.cos().rename("cosAspect")
+    
+    var slopeRadians = slope.multiply(0.0174533)
+  
+    // //Calculate heat load index, based on Theobald et al (2015)
+    // //https://github.com/zachlevitt/earth-engine/blob/master/topoModules.md#theobaldhlihttps://github.com/zachlevitt/earth-engine/blob/master/topoModules.md#theobaldhli
+  
+  
+    var foldedAspect = aspectRadians.subtract(ee.Number(4.3196899)).abs().multiply(ee.Number(-1)).add(PI).abs().rename('foldedAspect')
+    var theobaldHLI = (slopeRadians.cos().multiply(ee.Number(1.582)).multiply(ee.Number(0.82886954044))).subtract(foldedAspect.cos().multiply(ee.Number(1.5)).multiply(slopeRadians.sin().multiply(ee.Number(0.55944194062)))).subtract(slopeRadians.sin().multiply(ee.Number(0.262)).multiply(ee.Number(0.55944194062))).add(foldedAspect.sin().multiply(ee.Number(0.607)).multiply(slopeRadians.sin())).add(ee.Number(-1.467)).rename('HLI');
+    
+    // Add Topographic Posidition Index
+    var mean01 = srtm.focalMean(5.5, 'square');
+    var tpi11 = srtm.subtract(mean01).rename("tpi11")
+    var mean02 = srtm.focalMean(10.5, 'square');
+    var tpi21 = srtm.subtract(mean02).rename("tpi21")
+    var mean03 = srtm.focalMean(20.5, 'square');
+    var tpi41 = srtm.subtract(mean03).rename("tpi41")
+    
+    // Stack Terrain Variables
+    var newTerrainVariable = srtm.addBands(slope).addBands(sinAspect).addBands(cosAspect)//.addBands(NorthnessExpo).addBands(EastnessExpo)
+      .addBands(tpi11).addBands(tpi21).addBands(tpi41).addBands(theobaldHLI)//.addBands(foldedAspect)
+    
+    gediMasterLS = gediMasterLS.addBands(newTerrainVariable)
+  
+  }
+  
+  ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  //
+  //                Add ESA Global Landcover 2021
+  //
+  ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  
+  if (addESALandcover){
+    print('Adding ESA Global Landcover 2021 Landuse and Landcover')
+    // grab SRTM Data
+    
+    var esaLandcover = ee.ImageCollection('ESA/WorldCover/v200').first()
+    .select(['Map'],['esaLC_2021'])
+    .unmask(9999)
+    
+  
+    gediMasterLS = gediMasterLS.addBands(esaLandcover)
+  
+  }
+  
+  
+  ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  //
+  //                Add ESA Forest Types 2019
+  //
+  ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  
+  if (addESAForestTypes){
+    print('Adding ESA Forest Types')
+    // grab SRTM Data
+    
+    var esaForestType = ee.Image('COPERNICUS/Landcover/100m/Proba-V-C3/Global/2019')
+    .select(['forest_type'],['esaFT_2019'])
+    .unmask(9999)
+    
+  
+    gediMasterLS = gediMasterLS.addBands(esaForestType)
+  
+  }
+  
+  ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  //
+  //                Add Global Forest Types
+  //
+  ///////////////////////////////////////////////////////////////////////////////////////////////////////
+  
+  if (addJRCGlobalForestTypes){
+    print('Adding JRC Global Forest Types')
+    var GFT2020 = ee.ImageCollection('JRC/GFC2020_subtypes/V0').mosaic()
+    .rename('jrcGFT_2020')
+    .unmask(9999)
+    
+    gediMasterLS = gediMasterLS.addBands(GFT2020)
+  
+  }
+  
+  ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  //
+  //                Add Hansen Global Tree Loss
+  //
+  ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  
+  if (addHansenTreeLoss){
+    print('Adding Hansen Tree Loss')
+    // grab SRTM Data
+    
+    var hansenTreeLoss = ee.Image('UMD/hansen/global_forest_change_2024_v1_12')
+    .select(['lossyear','loss','gain'],['hnsnLossYr','hnsnLoss','hnsnGain'])
+    .unmask(9999)
+    
+  
+    gediMasterLS = gediMasterLS.addBands(hansenTreeLoss)
+  
+  }
+  
+  ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  //
+  //                Add Flow Index
+  //
+  ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  
+  if (addFlowIndex){
+    print('Adding Flow Index')
+    // grab SRTM Data
+    
+    var cti = ee.ImageCollection("projects/sat-io/open-datasets/HYDROGRAPHY90/flow_index/cti")
+    .filterBounds(AOI)
+    .mosaic()
+    .resample("bicubic")
+    .rename('cti')
+    var spi = ee.ImageCollection("projects/sat-io/open-datasets/HYDROGRAPHY90/flow_index/spi")
+    .filterBounds(AOI)
+    .mosaic()
+    .resample("bicubic")
+    .rename('spi')
+    var sti = ee.ImageCollection("projects/sat-io/open-datasets/HYDROGRAPHY90/flow_index/sti")
+    .filterBounds(AOI)
+    .mosaic()
+    .resample("bicubic")
+    .rename('sti')
+    
+  
+    gediMasterLS = gediMasterLS.addBands(cti).addBands(spi).addBands(sti)
+  
+  }
+  
+  ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  //
+  //                Add Height Above Nearest Drainage (HAND) Hydrology
+  //
+  ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  
+  if (addHANDHydro){
+    print('Adding Height Above Nearest Drainage (HAND) Hydrology')
+    // grab SRTM Data
+    
+    var hand30_100 = ee.ImageCollection("users/gena/global-hand/hand-100")
+    .filterBounds(AOI)
+    .mosaic()
+    .resample("bicubic")
+    .rename('hand30_100m')
+    var hand30_1000 = ee.Image("users/gena/GlobalHAND/30m/hand-1000")
+    .resample("bicubic")
+    .rename('hand30_1k')
+    var hand90_1000 = ee.Image("users/gena/GlobalHAND/90m-global/hand-1000")
+    .resample("bicubic")
+    .rename('hand90_1k')
+    
+    gediMasterLS = gediMasterLS.addBands(hand30_100).addBands(hand30_1000).addBands(hand90_1000)
+  
+  }
+  
+  
+  
+  
+  
+  
+  ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  //
+  //                Final Updates to Data
+  //
+  ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  
+  
+  if (simpleLandsat){
+    var optical=gediMasterLS.select(bandDictionary['reflectanceSimple']).multiply(10000).int16() //'lsDate'
+  } else {
+    var optical=gediMasterLS.select(bandDictionary['reflectanceAll']).multiply(10000).int16() //'lsDate'
+  }
+  
+  gediMasterLS = gediMasterLS.addBands(optical,null,true)
+  
+  if (addElevation){
+    var terrain100B = gediMasterLS.select(bandDictionary['terrain100']).multiply(100).int16()
+    var terrain10kB = gediMasterLS.select(bandDictionary['terrain10k']).multiply(10000).int16()
+    
+    gediMasterLS = gediMasterLS.addBands(terrain100B,null,true)
+    gediMasterLS = gediMasterLS.addBands(terrain10kB,null,true)
+  }
+  
+  if (addGLCMEVI){
+    var glcm10kB = gediMasterLS.select(bandDictionary['glcm10k']).multiply(10000).int16() 
+    var glcmOneThousandB = gediMasterLS.select(bandDictionary['glcmOneThousand']).multiply(1000).int16()
+    var glcmDNB = gediMasterLS.select(bandDictionary['glcmDN']).int16()
+    
+    gediMasterLS = gediMasterLS.addBands(glcm10kB,null,true)
+    gediMasterLS = gediMasterLS.addBands(glcmOneThousandB,null,true)
+    gediMasterLS = gediMasterLS.addBands(glcmDNB,null,true)
+  }  
+  
+  if (addGLCMvarNIR){
+    var glcmDNB = gediMasterLS.select(bandDictionary['glcmNIRDN']).int16()
+    gediMasterLS = gediMasterLS.addBands(glcmDNB,null,true)
+  }
+  
+  if (addGLCMconSWIR1){
+    var glcmDNB = gediMasterLS.select(bandDictionary['glcmSWIR1DN']).int16()
+    gediMasterLS = gediMasterLS.addBands(glcmDNB,null,true)
+  }  
+  
+  print(gediMasterLS.bandNames,"Final Band Names")
+  Map.addLayer(gediMasterLS,{},"with Landsat",false)
+  
+  
+  ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  //
+  //                Convert Raster to Points and Sample
+  //
+  ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  
+  
+  //Extracting values
+  var sampled_points2 = gediMasterLS.sample({ //--> or should I use 'reduceRegions'? If that makes more sence, what would the code look like for  'reduceRegions'?
+    region: AOI,
+    scale: 25,//imgScale,
+    // crsTransform: imgTransform,
+    projection: imgCRS,
+    geometries: true
+  });
+  
+  var featColExport = sampled_points2.map(function (feature) {
+    // Get geometry
+    var coordinates = feature.geometry()
+                            .transform(imgCRS)// <= Come Back
+                            .coordinates();
+                            
+    var lonInt=ee.Number(coordinates.get(0)).abs().int32() //A
+    var latInt=ee.Number(coordinates.get(1)).abs().int32()  //B
+    
+    var uniqid = ee.Number(10).pow((latInt.log10().add(1).int())).multiply(lonInt).add(latInt)
+    
+    
+    // var uniqid = feature.get('masterFrac').toDouble().format('%.18f')
+    
+    // Get both entries of coordinates and set them as new properties
+    var resul = feature.set('lon', coordinates.get(0), 
+                      'lat', coordinates.get(1),
+                      'uniqid',uniqid) //.format('%.18f')
+                      // 'uniqid'coordinates.get(0).add(coordinates.get(1)),
+                      // 'zone',zone,
+                      // 'tileID',IDs);
+    // Remove geometry                   
+    return resul.setGeometry(null)
+  })
+  
+  
+  ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  //
+  //                Export Data to Google Drive
+  //
+  ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  
+  
+  Export.table.toDrive({
+    collection: featColExport,
+    description: outName+"_tile"+IDs+"_"+startYear.toString()+"_"+endYear.toString()+"_"+startJulian.toString()+"_"+endJulian.toString()+"_"+dateToday,
+    folder: outDir,
+    fileFormat: 'CSV'
+  });
+
+
+})
