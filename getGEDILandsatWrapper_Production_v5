@@ -526,8 +526,8 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
     .map(maskCloudsTOA) // "Scalpel" Filter: Mask individual bad pixels
     // .map(addLSDate)
     // Rename bands to standard names for easy index calculation
-    .select(['B2', 'B3', 'B4', 'B5', 'B6', 'B7', 'lsDate'], 
-            ['blue', 'green', 'red', 'nir', 'swir1', 'swir2', 'lsDate']) 
+    .select(['B2', 'B3', 'B4', 'B5', 'B6', 'B7'], 
+            ['blue', 'green', 'red', 'nir', 'swir1', 'swir2']) 
     .map(addIndices); // Add NDVI, NBR, EVI
     
     
@@ -672,7 +672,7 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
       
       // CRITICAL: Use GEDI projection. 
       // This creates the sample points at the exact center of the GEDI footprints.
-      projection: finalGedi_v2.projection(), // Probably error
+      projection: 'EPSG:32610', // Probably error
       
       // Use GEDI Scale (25m)
       scale: 25, 
