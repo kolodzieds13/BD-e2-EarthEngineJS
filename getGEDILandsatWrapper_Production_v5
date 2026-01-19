@@ -1,3 +1,6 @@
+/**** Start of imports. If edited, may not auto-convert in the playground. ****/
+var vizzy = {"opacity":1,"bands":["swir1","nir","red"],"min":-0.02243939275312533,"max":0.22223968123583304,"gamma":1};
+/***** End of imports. If edited, may not auto-convert in the playground. *****/
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 //                GET GEDI Data
@@ -432,7 +435,7 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
     })
   
   var addLatLon = function(img){
-    var latLon = ee.Image.pixelLonLat(); // Adds 'latitude' and 'longitude' bands
+    var latLon = ee.Image.pixelLonLat().multiply(10000).double(); // Adds 'latitude' and 'longitude' bands
     return img.addBands(latLon);
   };
   
@@ -636,17 +639,32 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
     var matchColWithDiff = matchCol.map(function (lsImg) {
       
       var doy = lsImg.date().format('YYYYMMdd');
-      var doyBand = ee.Image.constant(ee.Number.parse(doy)).rename('lsDate')
+      var doyBand = ee.Image.constant(ee.Number.parse(doy)).rename('lsDate').double()
 
       
       var timeDiff = lsImg.date().difference(gediImg.date(), 'day').abs(); 
         
       // Invert difference so 'qualityMosaic' picks the SMALLEST difference
-      var qualityBand = ee.Image.constant(timeDiff).multiply(-1).rename('timeMatchQuality');
+      var qualityBand = ee.Image.constant(timeDiff).multiply(-1).rename('timeMatchQuality').double();
+      
+      
+      // B. Metadata Encoding (The Fix)
+      // 1. Path (e.g., 45)
+      var path = ee.Image.constant(lsImg.getNumber('WRS_PATH')).rename('path').toInt();
+      // 2. Row (e.g., 30)
+      var row = ee.Image.constant(lsImg.getNumber('WRS_ROW')).rename('row').toInt();
+      // 3. Sensor (8 or 9)
+      var sensorNum = ee.Number.parse(ee.String(lsImg.get('SPACECRAFT_ID')).split('_').get(1));
+      var sensor = ee.Image.constant(sensorNum).rename('sensor').toInt();
+        
+      
+      
       
       return lsImg.addBands(qualityBand).addBands(doyBand)
-                  .float()
-                  .updateMask(lsImg.select('blue').mask()); 
+                .addBands(path)
+                .addBands(row)
+                .addBands(sensor)
+                .updateMask(lsImg.select('blue').mask()); 
     });
     
     // 3. Select the best pixel (Best = Closest Date)
@@ -665,6 +683,22 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
   // 6. SAMPLING & EXPORT
   // =======================================================
   
+  // Identify first band
+  var firstImg = processedCol.first()
+  // Get the list of band names (e.g., ['B1', 'B2', 'B3'])
+  var bandNames = firstImg.bandNames();
+  
+  // Get the first name from that list (Index 0)
+  var firstBandName = ee.String(bandNames.get(0));
+  
+  // Select the band using that dynamic name
+  var firstBand = firstImg.select(firstBandName);
+  
+  var tempProj02 = firstBand.projection().getInfo()
+  print(tempProj02.crs, 'Projection CRS')
+  print(tempProj02.wkt, 'Projection WKT')
+  print(tempProj02.transform, 'Projection Transform')
+  
   
   var table = processedCol.map(function(img) {
     return img.sample({
@@ -672,7 +706,7 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
       
       // CRITICAL: Use GEDI projection. 
       // This creates the sample points at the exact center of the GEDI footprints.
-      projection: 'EPSG:32610', // Probably error
+      projection: 'EPSG:32610',
       
       // Use GEDI Scale (25m)
       scale: 25, 
@@ -686,13 +720,168 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
     // Export
   Export.table.toDrive({
     collection: table,
-    description: "GEDI_Landsat_Joined_v3_WithCoords_NearestNoSnap_v99",
+    description: "GEDI_Landsat_Joined_v3_WithCoords_NearestNoSnap_v103",
     folder: 'testImg', // [cite: 1]
     fileFormat: 'CSV',
-    selectors: ['agbd', 'gediDate','lsDate', 'latitude', 'longitude', 'blue', 'red', 'nir', 'swir1', 'swir2'] 
+    // selectors: ['agbd', 'gediDate','lsDate', 'latitude', 'longitude', 'blue', 'red', 'nir', 'swir1', 'swir2'] 
     // ^ Explicitly list columns to ensure order and exclude junk bands like 'timeMatchQuality'
   });
 
+  
+  // =======================================================
+  // 1. INPUTS FROM YOUR CSV
+  // =======================================================
+  // Use the Lat/Lon from the SAME ROW in your CSV
+  var targetLat = 48.046442; // REPLACE with 'latitude' from CSV
+  var targetLon = -123.851187; // REPLACE with 'longitude' from CSV
+  
+  var targetSensor = 8;      // From CSV (8 or 9)
+  var targetDateNum = 20190428; // From CSV 'lsDate'
+  
+  // =======================================================
+  // 2. ROBUST FINDER (Location + Time Window)
+  // =======================================================
+  
+  // Parse the date
+  var dateStr = targetDateNum.toString();
+  var year = dateStr.substring(0, 4);
+  var month = dateStr.substring(4, 6);
+  var day = dateStr.substring(6, 8);
+  var originDate = year + '-' + month + '-' + day; // "2019-04-28"
+  
+  // Define a 3-day search window (Target +/- 1 Day)
+  // This solves the UTC date shift and "rounding by one" errors.
+  var startDate = ee.Date(originDate).advance(-10, 'day');
+  var endDate = ee.Date(originDate).advance(10, 'day');
+  
+  // Define geometry from CSV coords
+  var point = ee.Geometry.Point([targetLon, targetLat]);
+  
+  // Select Collection based on Sensor
+  
+  // =======================================================
+  // 3. SEARCH
+  // =======================================================
+  
+  var foundImages = finalGedi_v2//ee.ImageCollection(colID) ///CHECKGEDI
+    .filterBounds(point) // Look for ANY image covering this point
+    .filterDate(startDate, endDate); // Look within the +/- 1 day window
+  
+  // Print results to Console to see what was found
+  print('GEDI Search Results:', foundImages);
+  
+  // =======================================================
+  // 4. VISUALIZATION
+  // =======================================================
+  
+  var image = foundImages.mosaic(); // Grab the best match
+  
+  // Check if we actually found it before mapping
+  ee.Algorithms.If(foundImages.size().gt(0),
+    Map.addLayer(image, {}, 'Found GEDI Image'),
+    print('ERROR: No image found. Check coordinates or T1 vs T2 collection.')
+  );
+  
+  Map.centerObject(point, 10);
+  Map.addLayer(point, {color: 'red'}, 'GEDI Point');
+  
+  
+  
+  
+  
+  
+  
+  
+  // Convert 20190429 -> ee.Date('2019-04-29')
+  var targetDate = ee.Date.parse('YYYY-MM-dd', '2019-04-29');
+  
+  // Filter using the image's actual date property
+  var targetLS = lsPrep_wIndicies.filter(
+    ee.Filter.date(targetDate, targetDate.advance(1, 'day'))
+  ).first();
+  
+  
+  print(targetLS,"targetLS")
+  
+  getImagesLib.exportToDriveWrapper(
+    image.float(),
+    'TEST_GEDI_May_withTransform',
+    'testImg',
+    AOI,
+    // 25,
+    'EPSG:32610',
+    null,
+    [25, 0, 248650, 0, -25, 5323275],//null,
+    // 'EPSG:32610',
+    // args.transform,
+    -32768);
+    
+    
+  /// Find the GEDI Image and Export
+    // =======================================================
+  // 1. INPUTS FROM YOUR CSV
+  // =======================================================
+  // Use the Lat/Lon from the SAME ROW in your CSV
+  var targetLat = 48.046442; // REPLACE with 'latitude' from CSV
+  var targetLon = -123.851187; // REPLACE with 'longitude' from CSV
+  
+  var targetSensor = 8;      // From CSV (8 or 9)
+  var targetDateNum = 20190428; // From CSV 'lsDate'
+  
+  // =======================================================
+  // 2. ROBUST FINDER (Location + Time Window)
+  // =======================================================
+  
+  // Parse the date
+  var dateStr = targetDateNum.toString();
+  var year = dateStr.substring(0, 4);
+  var month = dateStr.substring(4, 6);
+  var day = dateStr.substring(6, 8);
+  var originDate = year + '-' + month + '-' + day; // "2019-04-28"
+  
+  // Define a 3-day search window (Target +/- 1 Day)
+  // This solves the UTC date shift and "rounding by one" errors.
+  var startDate = ee.Date(originDate).advance(-1, 'day');
+  var endDate = ee.Date(originDate).advance(2, 'day');
+  
+  // Define geometry from CSV coords
+  var point = ee.Geometry.Point([targetLon, targetLat]);
+  
+  // Select Collection based on Sensor
+  var colID = 'LANDSAT/LC08/C02/T1_TOA'; 
+  if (targetSensor === 9) { colID = 'LANDSAT/LC09/C02/T1_TOA'; }
+  
+  // =======================================================
+  // 3. SEARCH
+  // =======================================================
+  
+  var foundImages = lsPrep_wIndicies//ee.ImageCollection(colID)
+    .filterBounds(point) // Look for ANY image covering this point
+    .filterDate(startDate, endDate); // Look within the +/- 1 day window
+  
+  // Print results to Console to see what was found
+  print('Search Results:', foundImages);
+  
+  // =======================================================
+  // 4. VISUALIZATION
+  // =======================================================
+  
+  var image = foundImages.first(); // Grab the best match
+  
+  // Check if we actually found it before mapping
+  ee.Algorithms.If(foundImages.size().gt(0),
+    Map.addLayer(image, vizzy, 'Found Landsat Image'),
+    print('ERROR: No image found. Check coordinates or T1 vs T2 collection.')
+  );
+  
+  Map.centerObject(point, 10);
+  Map.addLayer(point, {color: 'red'}, 'GEDI Point');
+  
+  
+  
+  
+  
+  
   
   
   // Convert 20190429 -> ee.Date('2019-04-29')
@@ -708,7 +897,7 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
   
   getImagesLib.exportToDriveWrapper(
     targetLS.float(),
-    'TEST_Landsat_Date20190429_v99_NearestNoSnap_v99',
+    'TEST_Landsat_Date20190429_v99_NearestNoSnap_v100',
     'testImg',
     AOI,
     30,
@@ -716,6 +905,15 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
     null,
     // args.transform,
     -32768);
+  
+  
+  
+  
+  
+  
+  
+    
+    
   
   
   
