@@ -440,13 +440,13 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
     return img.addBands(latLon);
   };
   
-  // var reprojectGEDI = function(img){
-  //   var imgRprj = img.reproject({
-  //     crs: imgCRS,
-  //     crsTransform: imgTransform
-  //   });
-  //   return imgRprj;
-  // };
+  var reprojectLandsat = function(img){
+    var imgRprj = img.reproject({
+      crs: 'EPSG:32610',
+      crsTransform: [25,0,248650,0,-25,5323275],
+    });
+    return imgRprj;
+  };
   
   // Get Final GEDI Product
   
@@ -565,7 +565,8 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
     // Rename bands to standard names for easy index calculation
     .select(['B2', 'B3', 'B4', 'B5', 'B6', 'B7'], 
             ['blue', 'green', 'red', 'nir', 'swir1', 'swir2']) 
-    .map(addIndices); // Add NDVI, NBR, EVI
+    .map(addIndices) // Add NDVI, NBR, EVI
+    .map(reprojectLandsat)
     
     
   // ======================
@@ -694,7 +695,11 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
     });
     
     // 3. Select the best pixel (Best = Closest Date)
-    var bestLandsat = matchColWithDiff.qualityMosaic('timeMatchQuality');
+    var bestLandsat = matchColWithDiff.qualityMosaic('timeMatchQuality')
+      .reproject({
+        crs: 'EPSG:32610',
+        scale: 25
+    });
   
     // 4. Combine everything
     // Correction: Removed .resample('nearest'). GEE defaults to nearest neighbor automatically.
@@ -727,15 +732,19 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
   
   
   var table = processedCol.map(function(img) {
-    return img.sample({
+    var reprojected = img.reproject({
+      crs: 'EPSG:32610',
+      scale: 25
+    })
+    return reprojected.sample({
       region: roi,
       
       // CRITICAL: Use GEDI projection. 
       // This creates the sample points at the exact center of the GEDI footprints.
-      projection: imgCRS,
+      projection: 'EPSG:32610',
       
       // Use GEDI Scale (25m)
-      scale: 30, 
+      scale: 25, 
       
       geometries: false, // Lat/Lon bands are already added, so false saves space      
       dropNulls: true    // Drops GEDI shots that have NO valid Landsat match
@@ -746,7 +755,7 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
     // Export
   Export.table.toDrive({
     collection: table,
-    description: "GEDI_Landsat_Joined_v99x_30m",
+    description: "GEDI_Landsat_Joined_v99x_25m_v2",
     folder: 'testImg', // [cite: 1]
     fileFormat: 'CSV',
     // selectors: ['agbd', 'gediDate','lsDate', 'latitude', 'longitude', 'blue', 'red', 'nir', 'swir1', 'swir2'] 
