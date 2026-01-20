@@ -1,5 +1,6 @@
 /**** Start of imports. If edited, may not auto-convert in the playground. ****/
-var vizzy = {"opacity":1,"bands":["swir1","nir","red"],"min":-0.02243939275312533,"max":0.22223968123583304,"gamma":1};
+var vizzy = {"opacity":1,"bands":["swir1","nir","red"],"min":-0.02243939275312533,"max":0.22223968123583304,"gamma":1},
+    samples = ee.FeatureCollection("projects/ee-kolodzieds13/assets/TESTING_GEDI_Kenobi_Samples/BDe2_tile13_GediSamples");
 /***** End of imports. If edited, may not auto-convert in the playground. *****/
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -341,7 +342,7 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
   var GEDI_L4A = ee.ImageCollection('LARSE/GEDI/GEDI04_A_002_MONTHLY')
     .filterBounds(AOI)
     .filter(ee.Filter.calendarRange(startYear,endYear,'year'))
-    .filter(ee.Filter.calendarRange(startJulian,endJulian))
+    .filter(ee.Filter.calendarRange(startJulian,endJulian)) //defaults to day of year
   
   print('GEDI_L2A',GEDI_L2A.first())
   print('GEDI_L2B',GEDI_L2B.first())
@@ -506,9 +507,9 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
   // =======================================================
   
   /**
-   * Robust Cloud Masking for Collection 2 TOA Data
-   * masks Dilated Cloud (Bit 1), Cloud (Bit 3), and Shadow (Bit 4)
-   */
+  * Robust Cloud Masking for Collection 2 TOA Data
+  * masks Dilated Cloud (Bit 1), Cloud (Bit 3), and Shadow (Bit 4)
+  */
   var maskCloudsTOA = function(image) {
     var qa = image.select('QA_PIXEL');
     var mask = qa.bitwiseAnd(1 << 1).eq(0) // Dilated Cloud
@@ -518,8 +519,8 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
   };
   
   /**
-   * Add Date Band (YYYYMMDD) for tracking
-   */
+  * Add Date Band (YYYYMMDD) for tracking
+  */
   var addLSDate = function(image){
     var doy = image.date().format('YYYYMMdd');
     var doyBand = ee.Image.constant(ee.Number.parse(doy)).rename('lsDate').toInt();
@@ -527,8 +528,8 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
   };
   
   /**
-   * Add Spectral Indices: NDVI, EVI, NBR
-   */
+  * Add Spectral Indices: NDVI, EVI, NBR
+  */
   var addIndices = function(image) {
     // NDVI = (NIR - Red) / (NIR + Red)
     var ndvi = image.normalizedDifference(['nir', 'red']).rename('NDVI');
@@ -734,7 +735,7 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
       projection: imgCRS,
       
       // Use GEDI Scale (25m)
-      scale: 25, 
+      scale: 30, 
       
       geometries: false, // Lat/Lon bands are already added, so false saves space      
       dropNulls: true    // Drops GEDI shots that have NO valid Landsat match
@@ -745,7 +746,7 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
     // Export
   Export.table.toDrive({
     collection: table,
-    description: "GEDI_Landsat_Joined_v99x",
+    description: "GEDI_Landsat_Joined_v99x_30m",
     folder: 'testImg', // [cite: 1]
     fileFormat: 'CSV',
     // selectors: ['agbd', 'gediDate','lsDate', 'latitude', 'longitude', 'blue', 'red', 'nir', 'swir1', 'swir2'] 
@@ -919,21 +920,50 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
   
   getImagesLib.exportToDriveWrapper(
     targetLS.float(),
-    'TEST_Landsat_Date20190429_v99_NearestNoSnap_99x',
+    'TEST_Landsat_Date20190429_v99_NearestNoSnap_99x_v2',
     'testImg',
     AOI,
-    25,
+    30,
     imgCRS,
     null,
     // args.transform,
     -32768);
   
   
+  var target32610 = targetLS.reproject({
+    crs: 'EPSG:32610'
+  })
+  
+  
+    
+  var sampledRegion = target32610.sampleRegions({
+    collection: samples,
+  })
+  
+  Export.table.toDrive({
+    collection: sampledRegion,
+    description: "GEDI_Landsat_Joined_tile13_May2019_MANUALCHECK_reproject",
+    folder: 'testImg', // [cite: 1]
+    fileFormat: 'CSV',
+    // selectors: ['agbd', 'gediDate','lsDate', 'latitude', 'longitude', 'blue', 'red', 'nir', 'swir1', 'swir2'] 
+    // ^ Explicitly list columns to ensure order and exclude junk bands like 'timeMatchQuality'
+  });
   
   
   
+  Map.addLayer(samples,{},'GEDI Samples Tile 13')
   
+  var proj = samples.first().geometry().projection();
+
+  print('Sample Projection Info:', proj);
+  print('Sample CRS Code:', proj.crs());
+  print('Sample Transform:', proj.transform());
   
+  var AOIproj = AOI.geometry().projection()
+
+  print('AOIproj Projection Info:', AOIproj);
+  print('AOIproj CRS Code:', AOIproj.crs());
+  print('AOIproj Transform:', AOIproj.transform());
     
     
   
