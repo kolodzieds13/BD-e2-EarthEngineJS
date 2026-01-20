@@ -439,13 +439,13 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
     return img.addBands(latLon);
   };
   
-  var reprojectGEDI = function(img){
-    var imgRprj = img.reproject({
-      crs: imgCRS,
-      crsTransform: imgTransform
-    });
-    return imgRprj;
-  };
+  // var reprojectGEDI = function(img){
+  //   var imgRprj = img.reproject({
+  //     crs: imgCRS,
+  //     crsTransform: imgTransform
+  //   });
+  //   return imgRprj;
+  // };
   
   // Get Final GEDI Product
   
@@ -455,9 +455,33 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
   finalGedi_v2 = finalGedi_v2.map(beamFilter)
   finalGedi_v2 = finalGedi_v2.map(addLatLon)
   finalGedi_v2 = finalGedi_v2.map(addDateGEDI)
-  finalGedi_v2 = finalGedi_v2.map(reprojectGEDI)
+  // finalGedi_v2 = finalGedi_v2.map(reprojectGEDI)
   
   // finalGedi_v2 = finalGedi_v2.map(reprojectGEDI)
+  
+  var roi = AOI.geometry().bounds(100,imgCRS)
+  
+  var finalGedi_v2Q = finalGedi_v2.qualityMosaic('agbd')
+  var gediSamplesTest = finalGedi_v2Q.sample({
+      region: roi,
+      // CRITICAL: Use GEDI projection. 
+      // This creates the sample points at the exact center of the GEDI footprints.
+      projection: imgCRS,
+      // Use GEDI Scale (25m)
+      scale: 25, 
+      geometries: true, // Lat/Lon bands are already added, so false saves space      
+      dropNulls: true    // Drops GEDI shots that have NO valid Landsat match
+    });
+  
+  var outName00 = 'BDe2_tile13_GediSamples'
+  var exportPathRoot = 'projects/ee-kolodzieds13/assets/TESTING_GEDI_Kenobi_Samples/'
+  
+  Export.table.toAsset({
+    collection: gediSamplesTest,
+    description: outName00,
+    assetId:exportPathRoot+outName00
+  })
+  
   
   
   
@@ -646,17 +670,11 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
     
     // 2. Score matches by time difference
     var matchColWithDiff = matchCol.map(function (lsImg) {
-      
       var doy = lsImg.date().format('YYYYMMdd');
       var doyBand = ee.Image.constant(ee.Number.parse(doy)).rename('lsDate')
-
-      
       var timeDiff = lsImg.date().difference(gediImg.date(), 'day').abs(); 
-        
       // Invert difference so 'qualityMosaic' picks the SMALLEST difference
       var qualityBand = ee.Image.constant(timeDiff).multiply(-1).rename('timeMatchQuality');
-      
-      
       // B. Metadata Encoding (The Fix)
       // 1. Path (e.g., 45)
       var path = ee.Image.constant(lsImg.getNumber('WRS_PATH')).rename('path').toInt();
@@ -665,10 +683,7 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
       // 3. Sensor (8 or 9)
       var sensorNum = ee.Number.parse(ee.String(lsImg.get('SPACECRAFT_ID')).split('_').get(1));
       var sensor = ee.Image.constant(sensorNum).rename('sensor').toInt();
-        
-      
-      
-      
+
       return lsImg.addBands(qualityBand).addBands(doyBand)
                 .addBands(path)
                 .addBands(row)
@@ -719,7 +734,7 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
       projection: imgCRS,
       
       // Use GEDI Scale (25m)
-      scale: 30, 
+      scale: 25, 
       
       geometries: false, // Lat/Lon bands are already added, so false saves space      
       dropNulls: true    // Drops GEDI shots that have NO valid Landsat match
@@ -730,7 +745,7 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
     // Export
   Export.table.toDrive({
     collection: table,
-    description: "GEDI_Landsat_Joined_v99",
+    description: "GEDI_Landsat_Joined_v99x",
     folder: 'testImg', // [cite: 1]
     fileFormat: 'CSV',
     // selectors: ['agbd', 'gediDate','lsDate', 'latitude', 'longitude', 'blue', 'red', 'nir', 'swir1', 'swir2'] 
@@ -815,15 +830,13 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
   
   getImagesLib.exportToDriveWrapper(
     image.float(),
-    'TEST_GEDI_May_rescaledToGEDI',
-    'testImg',
-    AOI,
-    null,
-    imgCRS,
-    imgTransform,//null,
-    // 'EPSG:32610',
-    // args.transform,
-    -32768);
+    'TEST_GEDI_May_99x',
+    'testImg', // folder
+    AOI, //AOI
+    25, //scale
+    imgCRS, // crs
+    null,//transform,
+    -32768); // nodata
     
     
   /// Find the GEDI Image and Export
@@ -906,12 +919,12 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
   
   getImagesLib.exportToDriveWrapper(
     targetLS.float(),
-    'TEST_Landsat_Date20190429_v99_NearestNoSnap_v110',
+    'TEST_Landsat_Date20190429_v99_NearestNoSnap_99x',
     'testImg',
     AOI,
-    null,
+    25,
     imgCRS,
-    imgTransform,
+    null,
     // args.transform,
     -32768);
   
