@@ -107,8 +107,8 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
  
   
   // Select Start and End Days (in Julian Days)
-  var startJulian = 115
-  var endJulian = 125//365
+  var startJulian = 1
+  var endJulian = 365//365
   // Select Start and End Years
   // Note: GEDI Observation are avaliable from 2019 through 2023
   // Year 2023 only has data till March: endJulian no later than 91
@@ -513,8 +513,8 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
   // 1. INPUT PARAMETERS
   // =======================================================
   var imgCRS = 'EPSG:32610';
-  var startYear = '2019-04-25';
-  var endYear = '2019-05-05';
+  var startYear = '2019-01-01';
+  var endYear = '2019-12-31';
   var searchWindowDays = 20;
   var gediScale = 25;
   var roi = AOI.geometry().bounds(100, imgCRS);
@@ -719,7 +719,7 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
   
   Export.table.toDrive({
     collection: sampledPoints,
-    description: "GEDI_Landsat_Optimized_115_125",
+    description: "GEDI_Landsat_Optimized_1_365_2019",
     folder: 'testImg',
     fileFormat: 'CSV',
     selectors: [
@@ -783,21 +783,49 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
   // 4. VISUALIZATION
   // =======================================================
   
-  var image = foundImages.mosaic(); // Grab the best match
+  var lsColList = foundImages.toList(foundImages.size())
+  var image_01 = ee.Image(lsColList.get(0))
+  var image_02 = ee.Image(lsColList.get(1))
   
-  // Check if we actually found it before mapping
-  ee.Algorithms.If(foundImages.size().gt(0),
-    Map.addLayer(image, vizzy, 'Found Landsat Image Optimized'),
-    print('ERROR: No image found. Check coordinates or T1 vs T2 collection.')
-  );
+  var imageMosaic = foundImages.mosaic()
   
-  Map.centerObject(point, 10);
-  Map.addLayer(point, {color: 'red'}, 'GEDI Point');
+  // var image = foundImages.mosaic(); // Grab the best match
+  
+  // // Check if we actually found it before mapping
+  // ee.Algorithms.If(foundImages.size().gt(0),
+  //   Map.addLayer(image, vizzy, 'Found Landsat Image Optimized'),
+  //   print('ERROR: No image found. Check coordinates or T1 vs T2 collection.')
+  // );
+  
+  // Map.centerObject(point, 10);
+  // Map.addLayer(point, {color: 'red'}, 'GEDI Point');
   
   
   getImagesLib.exportToDriveWrapper(
-    image.float(),
-    'TEST_Landsat_Date20190429_v99_NearestNoSnap_99x_v3_Optimized',
+    image_01.float(),
+    'TEST_Landsat_Date20190429_v99_NearestNoSnap_99x_v3_Optimized_Img01',
+    'testImg',
+    AOI,
+    30,
+    imgCRS,
+    null,
+    // args.transform,
+    -32768);
+    
+  getImagesLib.exportToDriveWrapper(
+    image_02.float(),
+    'TEST_Landsat_Date20190429_v99_NearestNoSnap_99x_v3_Optimized_Img02',
+    'testImg',
+    AOI,
+    30,
+    imgCRS,
+    null,
+    // args.transform,
+    -32768);
+    
+  getImagesLib.exportToDriveWrapper(
+    imageMosaic.float(),
+    'TEST_Landsat_Date20190429_v99_NearestNoSnap_99x_v3_Optimized_Mosaic',
     'testImg',
     AOI,
     30,
