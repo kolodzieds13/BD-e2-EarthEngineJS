@@ -104,7 +104,7 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
   
   // Select Start and End Days (in Julian Days)
   var startJulian = 1
-  var endJulian = 180//365
+  var endJulian = 365//365
   // Select Start and End Years
   // Note: GEDI Observation are avaliable from 2019 through 2023
   // Year 2023 only has data till March: endJulian no later than 91
@@ -1244,7 +1244,7 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
   // Export
   Export.table.toDrive({
     collection: table,
-    description: "GEDI_Landsat_Joined_v3_WithCoords_NearestNoSnap_FinalTest",
+    description: "GEDI_Landsat_Joined_v3_WithCoords_NearestNoSnap_FinalTest_x99",
     folder: 'testImg', // [cite: 1]
     fileFormat: 'CSV',
     selectors: ['agbd', 'gediDate','lsDate', 'latitude', 'longitude', 'blue', 'red', 'nir', 'swir1', 'swir2'] 
