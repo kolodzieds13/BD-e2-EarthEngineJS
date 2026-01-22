@@ -547,6 +547,8 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
   // 3. CONVERT GEDI TO POINTS
   // =======================================================
   
+  print(finalGedi_v2,'finalGedi_v2')
+  
   var gediPoints = finalGedi_v2.map(function(img) {
     var points = img.sample({
       region: roi,
