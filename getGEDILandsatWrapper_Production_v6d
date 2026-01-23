@@ -687,7 +687,6 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
   
   
   var addLSMetadata = function(img){
-    var lsPrepWithMetadata = lsPrep.map(function(img) {
     // Extract metadata values
     var path = img.getNumber('WRS_PATH');
     var row = img.getNumber('WRS_ROW');
