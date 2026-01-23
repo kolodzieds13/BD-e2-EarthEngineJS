@@ -339,6 +339,8 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
     .filterBounds(AOI)
     .filter(ee.Filter.calendarRange(startYear,endYear,'year'))
     .filter(ee.Filter.calendarRange(startJulian,endJulian)) //defaults to day of year
+    
+  var gediProj = GEDI_L4A.first().select('agbd').projection()
   
   print('GEDI_L2A',GEDI_L2A.first())
   print('GEDI_L2B',GEDI_L2B.first())
@@ -459,12 +461,7 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
   // =======================================================
   // 1. INPUT PARAMETERS
   // =======================================================
-  var imgCRS = 'EPSG:32610';
-  var startYear = '2019-01-01';
-  var endYear = '2019-12-31';
   var searchWindowDays = 20;
-  var gediScale = 25;
-  var roi = AOI.geometry().bounds(100, imgCRS);
   
   // =======================================================
   // 2. HELPER FUNCTIONS
@@ -499,8 +496,7 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
   var gediPoints = finalGedi_v2.map(function(img) {
     var points = img.sample({
       region: roi,
-      projection: imgCRS,
-      scale: gediScale,
+      projection: gediProj,
       geometries: true,
       dropNulls: true
     });
@@ -524,13 +520,17 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
   // 4. LANDSAT PRE-PROCESSING (SIMPLIFIED - NO addLSDate)
   // =======================================================
   
+  
+ 
+  // Landsat General Collection
   // var l7 = ee.ImageCollection("LANDSAT/LE07/C02/T1_TOA");
   var l8 = ee.ImageCollection("LANDSAT/LC08/C02/T1_TOA");
   var l9 = ee.ImageCollection("LANDSAT/LC09/C02/T1_TOA");
   
   var lsPrep = l8.merge(l9)
     .filterBounds(AOI)
-    .filterDate(startYear, endYear)
+    .filter(ee.Filter.calendarRange(startYear,endYear,'year'))
+    .filter(ee.Filter.calendarRange(startJulian,endJulian))
     .filter(ee.Filter.lt('CLOUD_COVER', 80))
     .map(maskCloudsTOA)
     .select(['B2', 'B3', 'B4', 'B5', 'B6', 'B7'], 
