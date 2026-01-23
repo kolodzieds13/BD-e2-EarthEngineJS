@@ -175,11 +175,11 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
     }
   }
   
-  var addDateGEDI = function(im){
-    var doy = im.date().format('YYYYMMdd');
-    var doyBand = ee.Image.constant(ee.Number.parse(doy)).rename('gediDate').toInt()
-    return im.addBands(doyBand);
-  };
+  // var addDateGEDI = function(im){
+  //   var doy = im.date().format('YYYYMMdd');
+  //   var doyBand = ee.Image.constant(ee.Number.parse(doy)).rename('gediDate').toInt()
+  //   return im.addBands(doyBand);
+  // };
   
   
   
@@ -431,10 +431,10 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
   finalGedi_v2 = finalGedi_v2.map(sensitivityMask)
   finalGedi_v2 = finalGedi_v2.map(beamFilter)
   finalGedi_v2 = finalGedi_v2.map(addLatLon)
-  finalGedi_v2 = finalGedi_v2.map(addDateGEDI)
+  // finalGedi_v2 = finalGedi_v2.map(addDateGEDI)
 
   
-    //////////////////////////////////////////////////////////////////
+  //////////////////////////////////////////////////////////////////
   //
   //             Prepare Landsat Data using GTAC Module
   //
@@ -451,8 +451,6 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
   // Specify study area: Study area
   // Can be a featureCollection, feature, or geometry
   args.studyArea = AOI//Kenobi_AOI//AOI;
-  
-  var Validation04 = AOI//Kenobi_AOI//AOI
   
   // Update the startJulian and endJulian variables to indicate your seasonal 
   // constraints. This supports wrapping for tropics and southern hemisphere.
