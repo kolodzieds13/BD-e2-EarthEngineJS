@@ -127,7 +127,7 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
   // Select Transform. Transform is used to ensure proper snapping to other datasets
   var imgTransform = null//null//[25, 0, 248650, 0, -25, 5323275]//[30,0,-2361915,0,-30,3177735]
   
-  var roi = AOI.geometry().bounds(100,imgCRS)
+  
   
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   //
@@ -706,12 +706,18 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
   }
   
   var lsPrepWithMetadata = lsPrep_wIndicies.map(addLSMetadata)
+    
+  var lsProj = lsPrepWithMetadata.first().select('blue').projection()
+  print(lsProj,'lsProj')
+  
   
   // =======================================================
   // 3. CONVERT GEDI TO POINTS
   // =======================================================
   
   print(finalGedi_v2,'finalGedi_v2')
+  
+  var roi = AOI.geometry().bounds(100,gediProj)
   
   var gediPoints = finalGedi_v2.map(function(img) {
     var points = img.sample({
@@ -762,8 +768,6 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
     condition: joinFilter
   });
   
-  var projInfo = lsPrepWithMetadata.first().select('blue').projection()
-  print(projInfo)
   
   print('Joined data size:', joinedData.size());
   
@@ -1036,7 +1040,7 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
           reducer: ee.Reducer.first(),
           geometry: gediGeom,
           scale: null,
-          crs: projInfo, // replaced bestPixel.select('blue').projection() with projInfo
+          crs: lsProj, // replaced bestPixel.select('blue').projection() with projInfo
           bestEffort: false // change from false to true
         });
         
