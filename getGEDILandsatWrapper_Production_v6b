@@ -686,8 +686,9 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
         var sample = bestPixel.reduceRegion({
           reducer: ee.Reducer.first(),
           geometry: gediGeom,
-          scale: 30,
+          scale: null,
           crs: bestPixel.select('blue').projection(),
+          crs: bestPixel.select('blue').projection().transform(),
           bestEffort: false // change from false to true
         });
         
@@ -721,7 +722,7 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
   
   Export.table.toDrive({
     collection: sampledPoints,
-    description: "GEDI_Landsat_Optimized_1_365_2019",
+    description: "GEDI_Landsat_Optimized_1_365_2019_wTransform",
     folder: 'testImg',
     fileFormat: 'CSV',
     selectors: [
