@@ -688,7 +688,7 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
           geometry: gediGeom,
           scale: null,
           crs: bestPixel.select('blue').projection(),
-          crs: bestPixel.select('blue').projection().transform(),
+          crsTransform: bestPixel.select('blue').projection(),
           bestEffort: false // change from false to true
         });
         
