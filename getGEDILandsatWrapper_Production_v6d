@@ -59,7 +59,8 @@ var beamType = 'all'
 // Select solor elevation threshold. Filter applies less than condition.
 // i.e. 0 indicated solar-elevation less than 0; indicating night time observation
 var solarElevThres = 0
-
+// Select Landsat Date Filter
+var searchWindowDays = 20
 // Apply NDVI/Canopy Cover Filter
 // Warning: This technique calculates StDev on the fly and only within the AOI. If you need to split the aoi
 // then the results may not be consistent
@@ -120,11 +121,11 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
   var AOI = Kenobi_TileSchema_v5.filter(ee.Filter.eq('zoneID',IDs))
   
   // Select Projection
-  var imgCRS = 'EPSG:32610' //5070 / 32610
+  var imgCRS = null //5070 / 32610
   // Select Scale: Desired resolution of data.
   var imgScale = null
   // Select Transform. Transform is used to ensure proper snapping to other datasets
-  var imgTransform = [30,0,397185,0,-30,5531415]//null//[25, 0, 248650, 0, -25, 5323275]//[30,0,-2361915,0,-30,3177735]
+  var imgTransform = null//null//[25, 0, 248650, 0, -25, 5323275]//[30,0,-2361915,0,-30,3177735]
   
   var roi = AOI.geometry().bounds(100,imgCRS)
   
@@ -258,16 +259,7 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
     var glcm3_smooth = glcm3.convolve(boxcar).select(bandDictionary['glcmSWIR1']); 
     return img.addBands(glcm3_smooth)
   }
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
+
   
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   //
@@ -294,12 +286,6 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
     
     "glcmSWIR1":ee.List(['swir1_contrast']),
     "glcmSWIR1DN":ee.List(['swir1_contrast']),
-    
-    
-              
-    
-    
-    
     
     "terrain100":ee.List(['slope','tpi11','tpi21','tpi41']),
     "terrain10k":ee.List(["sinAspect",'cosAspect','HLI']),
@@ -446,11 +432,7 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
   finalGedi_v2 = finalGedi_v2.map(beamFilter)
   finalGedi_v2 = finalGedi_v2.map(addLatLon)
   finalGedi_v2 = finalGedi_v2.map(addDateGEDI)
-  // finalGedi_v2 = finalGedi_v2.map(reprojectGEDI)
-  
-  // finalGedi_v2 = finalGedi_v2.map(reprojectGEDI)
-  
-  // NEW NEW
+
   
     //////////////////////////////////////////////////////////////////
   //
@@ -644,16 +626,38 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
   var lsPrep = getImagesLib.getProcessedLandsatScenes(args)
   
   var lsPrep_wIndicies = lsPrep
-          // .map(addLSDate)
+          .map(addLSDate)
           .map(getImagesLib.addSAVIandEVI)
           .map(getImagesLib.addTCAngles)
   
   if (simpleLandsat){
-    lsPrep_wIndicies=lsPrep_wIndicies.select(bandDictionary['reflectanceSimple']) //'lsDate'
+    lsPrep_wIndicies=lsPrep_wIndicies.select(bandDictionary['reflectanceSimple'].add('lsDate'))
   } else {
-    lsPrep_wIndicies=lsPrep_wIndicies.select(bandDictionary['reflectanceAll']) //'lsDate'
+    lsPrep_wIndicies=lsPrep_wIndicies.select(bandDictionary['reflectanceAll'].add('lsDate'))
   }
   
+  print("Landsat Collection Size:", lsPrep_wIndicies.size());
+  
+  var addLSMetadata = function(img){
+    var lsPrepWithMetadata = lsPrep.map(function(img) {
+    // Extract metadata values
+    var path = img.getNumber('WRS_PATH');
+    var row = img.getNumber('WRS_ROW');
+    var sensorNum = ee.Number.parse(ee.String(img.get('SPACECRAFT_ID')).split('_').get(1));
+    var cloudCover = img.getNumber('CLOUD_COVER');
+    var lsDateValue = ee.Number.parse(img.date().format('YYYYMMdd'));
+    
+    // Create constant bands for ALL metadata
+    var pathBand = ee.Image.constant(path).rename('path').toInt();
+    var rowBand = ee.Image.constant(row).rename('row').toInt();
+    var sensorBand = ee.Image.constant(sensorNum).rename('sensor').toInt();
+    var cloudBand = ee.Image.constant(cloudCover).rename('cloud_cover').toFloat();
+    var lsDateBand = ee.Image.constant(lsDateValue).rename('lsDate').toInt();
+    
+    return img.addBands([pathBand, rowBand, sensorBand, cloudBand, lsDateBand]);
+  }
+  
+  lsPrep_wIndicies = lsPrep_wIndicies.map(addLSMetadata)
   
   
   
@@ -661,42 +665,6 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
   
   
   
-  
-  
-
-  /***
-    DEBUG VERSION: Explicit handling of all metadata
-    This version creates all metadata as constant bands to ensure they're sampled
-  ***/
-  
-  // =======================================================
-  // 1. INPUT PARAMETERS
-  // =======================================================
-  var searchWindowDays = 20;
-  
-  // =======================================================
-  // 2. HELPER FUNCTIONS
-  // =======================================================
-  
-  var maskCloudsTOA = function(image) {
-    var qa = image.select('QA_PIXEL');
-    var mask = qa.bitwiseAnd(1 << 1).eq(0)
-          .and(qa.bitwiseAnd(1 << 3).eq(0))
-          .and(qa.bitwiseAnd(1 << 4).eq(0));
-    return image.updateMask(mask);
-  };
-  
-  var addIndices = function(image) {
-    var ndvi = image.normalizedDifference(['nir', 'red']).rename('NDVI');
-    var nbr = image.normalizedDifference(['nir', 'swir2']).rename('NBR');
-    var evi = image.expression(
-      '2.5 * ((NIR - RED) / (NIR + 6 * RED - 7.5 * BLUE + 1))', {
-        'NIR': image.select('nir'),
-        'RED': image.select('red'),
-        'BLUE': image.select('blue')
-      }).rename('EVI');
-    return image.addBands([ndvi, nbr, evi]);
-  };
   
   // =======================================================
   // 3. CONVERT GEDI TO POINTS
@@ -733,22 +701,8 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
   
   
  
-  // Landsat General Collection
-  // var l7 = ee.ImageCollection("LANDSAT/LE07/C02/T1_TOA");
-  var l8 = ee.ImageCollection("LANDSAT/LC08/C02/T1_TOA");
-  var l9 = ee.ImageCollection("LANDSAT/LC09/C02/T1_TOA");
   
-  var lsPrep = l8.merge(l9)
-    .filterBounds(AOI)
-    .filter(ee.Filter.calendarRange(startYear,endYear,'year'))
-    .filter(ee.Filter.calendarRange(startJulian,endJulian))
-    .filter(ee.Filter.lt('CLOUD_COVER', 80))
-    .map(maskCloudsTOA)
-    .select(['B2', 'B3', 'B4', 'B5', 'B6', 'B7'], 
-            ['blue', 'green', 'red', 'nir', 'swir1', 'swir2'])
-    .map(addIndices);
   
-  print("Landsat Collection Size:", lsPrep.size());
   
   // =======================================================
   // 5. ADD ALL METADATA AS CONSTANT BANDS
@@ -771,9 +725,6 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
     
     return img.addBands([pathBand, rowBand, sensorBand, cloudBand, lsDateBand]);
   });
-  
-  // DEBUG: Verify bands
-  print('Landsat bands after metadata:', lsPrepWithMetadata.first().bandNames());
   
   // =======================================================
   // 6. SPATIAL-TEMPORAL JOIN
