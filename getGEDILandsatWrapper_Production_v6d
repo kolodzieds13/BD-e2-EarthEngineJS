@@ -636,6 +636,56 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
   
   print("Landsat Collection Size:", lsPrep_wIndicies.size());
   
+    //////////////////////////////////////////////////////////////////
+  //
+  //             Add GLCM
+  //
+  /////////////////////////////////////////////////////////////////
+  
+  
+  if (addGLCMEVI){
+    lsPrep_wIndicies = lsPrep_wIndicies.map(applyGLCMEVI)
+  }
+  print("Landsat Band Names",lsPrep_wIndicies.first().bandNames())
+  
+  //////////////////////////////////////////////////////////////////
+  //
+  //             Add NIR GLCM
+  //
+  /////////////////////////////////////////////////////////////////
+  
+  
+  if (addGLCMvarNIR){
+    lsPrep_wIndicies = lsPrep_wIndicies.map(applyGLCMvarNIR)
+  }
+  print("Landsat Band Names",lsPrep_wIndicies.first().bandNames())
+  
+  //////////////////////////////////////////////////////////////////
+  //
+  //             Add SWIR1 GLCM
+  //
+  /////////////////////////////////////////////////////////////////
+  
+  
+  if (addGLCMconSWIR1){
+    lsPrep_wIndicies = lsPrep_wIndicies.map(applyGLCMconSWIR1)
+  }
+  print("Landsat Band Names",lsPrep_wIndicies.first().bandNames())
+  
+  // Add Date to Landsat
+  
+  // lsPrep_wIndicies = lsPrep_wIndicies.map(addLSDate)
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
   var addLSMetadata = function(img){
     var lsPrepWithMetadata = lsPrep.map(function(img) {
     // Extract metadata values
