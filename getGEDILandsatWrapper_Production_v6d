@@ -1025,7 +1025,6 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
         }  
         
         print(gediMasterLS.bandNames,"Final Band Names")
-        Map.addLayer(gediMasterLS,{},"with Landsat",false)
   
         
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
