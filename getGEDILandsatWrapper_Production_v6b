@@ -649,6 +649,8 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
   // 7. SAMPLE EACH POINT FROM BEST AVAILABLE LANDSAT
   // =======================================================
   
+  var lsProj = lsPrepWithMetadata.first().select('blue').projection()
+  
   var sampleBestLandsat = function(gediFeature) {
     
     var matches = ee.List(gediFeature.get('landsat_matches'));
@@ -687,8 +689,7 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
           reducer: ee.Reducer.first(),
           geometry: gediGeom,
           scale: null,
-          crs: bestPixel.select('blue').projection(),
-          crsTransform: bestPixel.select('blue').projection(),
+          crs: lsProj,
           bestEffort: false // change from false to true
         });
         
@@ -776,8 +777,9 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
   // =======================================================
   
   var foundImages = lsPrepWithMetadata//ee.ImageCollection(colID)
-    .filterBounds(point) // Look for ANY image covering this point
-    .filterDate(startDate, endDate); // Look within the +/- 1 day window
+    .filterBounds(AOI) // Look for ANY image covering this point
+    // .filterDate(startDate, endDate) // Look within the +/- 1 day window
+    .filterDate('2019-12-01', '2019-12-10'); // Look within the +/- 1 day window
   
   // Print results to Console to see what was found
   print('Search Results:', foundImages);
@@ -789,6 +791,7 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
   var lsColList = foundImages.toList(foundImages.size())
   var image_01 = ee.Image(lsColList.get(0))
   var image_02 = ee.Image(lsColList.get(1))
+  var image_03 = ee.Image(lsColList.get(2))
   
   var imageMosaic = foundImages.mosaic()
   
@@ -806,7 +809,7 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
   
   getImagesLib.exportToDriveWrapper(
     image_01.float(),
-    'TEST_Landsat_Date20190429_v99_NearestNoSnap_99x_v3_Optimized_Img01',
+    'TEST_LandsatTOA_Date20190429_v99_NearestNoSnap_99x_v3_Optimized_Img01',
     'testImg',
     AOI,
     30,
@@ -817,7 +820,7 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
     
   getImagesLib.exportToDriveWrapper(
     image_02.float(),
-    'TEST_Landsat_Date20190429_v99_NearestNoSnap_99x_v3_Optimized_Img02',
+    'TEST_LandsatTOA_Date20190429_v99_NearestNoSnap_99x_v3_Optimized_Img02',
     'testImg',
     AOI,
     30,
@@ -827,8 +830,8 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
     -32768);
     
   getImagesLib.exportToDriveWrapper(
-    imageMosaic.float(),
-    'TEST_Landsat_Date20190429_v99_NearestNoSnap_99x_v3_Optimized_Mosaic',
+    image_03.float(),
+    'TEST_LandsatTOA_Date20190429_v99_NearestNoSnap_99x_v3_Optimized_Img03',
     'testImg',
     AOI,
     30,
