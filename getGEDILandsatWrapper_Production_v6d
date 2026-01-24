@@ -631,9 +631,9 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
           .map(getImagesLib.addTCAngles)
   
   if (simpleLandsat){
-    lsPrep_wIndicies=lsPrep_wIndicies.select(bandDictionary['reflectanceSimple'].add('lsDate'))
+    lsPrep_wIndicies=lsPrep_wIndicies.select(bandDictionary['reflectanceSimple']) //.add('lsDate')
   } else {
-    lsPrep_wIndicies=lsPrep_wIndicies.select(bandDictionary['reflectanceAll'].add('lsDate'))
+    lsPrep_wIndicies=lsPrep_wIndicies.select(bandDictionary['reflectanceAll'])  //.add('lsDate')
   }
   
   print("Landsat Collection Size:", lsPrep_wIndicies.size());
@@ -848,16 +848,19 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
     .mosaic()
     .resample("bicubic")
     .rename('cti')
+    .unmask(9999)
     var spi = ee.ImageCollection("projects/sat-io/open-datasets/HYDROGRAPHY90/flow_index/spi")
     .filterBounds(roi)
     .mosaic()
     .resample("bicubic")
     .rename('spi')
+    .unmask(9999)
     var sti = ee.ImageCollection("projects/sat-io/open-datasets/HYDROGRAPHY90/flow_index/sti")
     .filterBounds(roi)
     .mosaic()
     .resample("bicubic")
     .rename('sti')
+    .unmask(9999)
 
     
     lsPrepWithMetadata = lsPrepWithMetadata.map(function(img){
@@ -881,12 +884,15 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
     .mosaic()
     .resample("bicubic")
     .rename('hand30_100m')
+    .unmask(9999)
     var hand30_1000 = ee.Image("users/gena/GlobalHAND/30m/hand-1000")
     .resample("bicubic")
     .rename('hand30_1k')
+    .unmask(9999)
     var hand90_1000 = ee.Image("users/gena/GlobalHAND/90m-global/hand-1000")
     .resample("bicubic")
     .rename('hand90_1k')
+    .unmask(9999)
     
     lsPrepWithMetadata = lsPrepWithMetadata.map(function(img){
       return img.addBands(hand30_100).addBands(hand30_1000).addBands(hand90_1000)
@@ -1057,7 +1063,7 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
         });
         
         var sampledFeature = ee.Feature(gediGeom, sample)
-          .copyProperties(gediFeature);
+          .copyProperties(gediFeature,null,['landsat_matches']);
         
         return sampledFeature;
       })()
