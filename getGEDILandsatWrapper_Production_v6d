@@ -183,12 +183,12 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
   
   
   
-  var addLSDate = function(im){
-    var doy = im.date().format('YYYYMMdd');
-    var doyBand = ee.Image.constant(ee.Number.parse(doy)).rename('lsDate').toInt()
+  // var addLSDate = function(im){
+  //   var doy = im.date().format('YYYYMMdd');
+  //   var doyBand = ee.Image.constant(ee.Number.parse(doy)).rename('lsDate').toInt()
   
-    return im.addBands(doyBand);
-  };
+  //   return im.addBands(doyBand);
+  // };
   
   
   var applyGLCMEVI = function(img){
@@ -626,7 +626,7 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
   var lsPrep = getImagesLib.getProcessedLandsatScenes(args)
   
   var lsPrep_wIndicies = lsPrep
-          .map(addLSDate)
+          // .map(addLSDate)
           .map(getImagesLib.addSAVIandEVI)
           .map(getImagesLib.addTCAngles)
   
