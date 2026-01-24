@@ -1066,7 +1066,7 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
           .copyProperties(gediFeature,null,['landsat_matches']);
         
         return sampledFeature;
-      })()
+      })//()
     );
     
     return ee.Feature(result);
