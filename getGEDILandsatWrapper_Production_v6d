@@ -678,14 +678,6 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
   
   
   
-  
-  
-  
-  
-  
-  
-  
-  
   var addLSMetadata = function(img){
     // Extract metadata values
     var path = img.getNumber('WRS_PATH');
@@ -708,6 +700,195 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
     
   var lsProj = lsPrepWithMetadata.first().select('blue').projection()
   print(lsProj,'lsProj')
+    
+  
+  ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  //
+  //                Apply SRTM Elevation
+  //
+  ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  
+        
+  if (addElevation){
+    print('Adding SRTM Elevation')
+    // grab SRTM Data
+    var srtm = ee.Image("USGS/SRTMGL1_003")
+      .resample("bicubic")
+      .select(['elevation'],['demSRTM'])
+     
+    var PI = ee.Image.constant(ee.Number.expression('Math.PI', null))
+    // grab Aspect
+    var aspect = ee.Terrain.aspect(srtm);
+    // grab Slope
+    var slope = ee.Terrain.slope(srtm)
+    // Grab Folded Aspect
+    var aspectRadians = aspect.multiply(0.0174533)
+    // grab Sin and Cosine Aspect
+    // https://www.researchgate.net/post/How_to_use_aspects_ie_N_NE_SE_etc_in_PCA_or_CCA_for_analysis_especially_using_PAST
+    var sinAspect = aspectRadians.sin().rename("sinAspect")
+    var cosAspect = aspectRadians.cos().rename("cosAspect")
+    
+    var slopeRadians = slope.multiply(0.0174533)
+  
+    // //Calculate heat load index, based on Theobald et al (2015)
+    // //https://github.com/zachlevitt/earth-engine/blob/master/topoModules.md#theobaldhlihttps://github.com/zachlevitt/earth-engine/blob/master/topoModules.md#theobaldhli
+  
+    var foldedAspect = aspectRadians.subtract(ee.Number(4.3196899)).abs().multiply(ee.Number(-1)).add(PI).abs().rename('foldedAspect')
+    var theobaldHLI = (slopeRadians.cos().multiply(ee.Number(1.582)).multiply(ee.Number(0.82886954044))).subtract(foldedAspect.cos().multiply(ee.Number(1.5)).multiply(slopeRadians.sin().multiply(ee.Number(0.55944194062)))).subtract(slopeRadians.sin().multiply(ee.Number(0.262)).multiply(ee.Number(0.55944194062))).add(foldedAspect.sin().multiply(ee.Number(0.607)).multiply(slopeRadians.sin())).add(ee.Number(-1.467)).rename('HLI');
+    
+    // Add Topographic Posidition Index
+    var mean01 = srtm.focalMean(5.5, 'square');
+    var tpi11 = srtm.subtract(mean01).rename("tpi11")
+    var mean02 = srtm.focalMean(10.5, 'square');
+    var tpi21 = srtm.subtract(mean02).rename("tpi21")
+    var mean03 = srtm.focalMean(20.5, 'square');
+    var tpi41 = srtm.subtract(mean03).rename("tpi41")
+    
+    // Stack Terrain Variables
+    var newTerrainVariable = srtm.addBands(slope).addBands(sinAspect).addBands(cosAspect)//.addBands(NorthnessExpo).addBands(EastnessExpo)
+      .addBands(tpi11).addBands(tpi21).addBands(tpi41).addBands(theobaldHLI)//.addBands(foldedAspect)
+    
+    lsPrepWithMetadata = lsPrepWithMetadata.map(function(img){
+      return img.addBands(newTerrainVariable)
+    }
+  
+  }
+  
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//                Add ESA Global Landcover 2021
+//
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+  if (addESALandcover){
+    print('Adding ESA Global Landcover 2021 Landuse and Landcover')
+    // grab SRTM Data
+    var esaLandcover = ee.ImageCollection('ESA/WorldCover/v200').first()
+    .select(['Map'],['esaLC_2021'])
+    .unmask(9999)
+    
+    lsPrepWithMetadata = lsPrepWithMetadata.map(function(img){
+      return img.addBands(esaLandcover)
+    }
+    
+  
+  }
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//                Add ESA Forest Types 2019
+//
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+  if (addESAForestTypes){
+    print('Adding ESA Forest Types')
+    // grab SRTM Data
+    var esaForestType = ee.Image('COPERNICUS/Landcover/100m/Proba-V-C3/Global/2019')
+    .select(['forest_type'],['esaFT_2019'])
+    .unmask(9999)
+    
+    lsPrepWithMetadata = lsPrepWithMetadata.map(function(img){
+      return img.addBands(esaForestType)
+    }
+  
+  }
+  
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//                Add Global Forest Types
+//
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+
+  if (addJRCGlobalForestTypes){
+    print('Adding JRC Global Forest Types')
+    var GFT2020 = ee.ImageCollection('JRC/GFC2020_subtypes/V0').mosaic()
+    .rename('jrcGFT_2020')
+    .unmask(9999)
+
+    lsPrepWithMetadata = lsPrepWithMetadata.map(function(img){
+      return img.addBands(GFT2020)
+    }
+  
+  }
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//                Add Hansen Global Tree Loss
+//
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+  if (addHansenTreeLoss){
+    print('Adding Hansen Tree Loss')
+    // grab SRTM Data
+    
+    var hansenTreeLoss = ee.Image('UMD/hansen/global_forest_change_2024_v1_12')
+    .select(['lossyear','loss','gain'],['hnsnLossYr','hnsnLoss','hnsnGain'])
+    .unmask(9999)
+    
+    lsPrepWithMetadata = lsPrepWithMetadata.map(function(img){
+      return img.addBands(hansenTreeLoss)
+    }
+    
+  }
+  
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//                Add Flow Index
+//
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+  if (addFlowIndex){
+    print('Adding Flow Index')
+    // grab SRTM Data
+    
+    var cti = ee.ImageCollection("projects/sat-io/open-datasets/HYDROGRAPHY90/flow_index/cti")
+    .filterBounds(AOI)
+    .mosaic()
+    .resample("bicubic")
+    .rename('cti')
+    var spi = ee.ImageCollection("projects/sat-io/open-datasets/HYDROGRAPHY90/flow_index/spi")
+    .filterBounds(AOI)
+    .mosaic()
+    .resample("bicubic")
+    .rename('spi')
+    var sti = ee.ImageCollection("projects/sat-io/open-datasets/HYDROGRAPHY90/flow_index/sti")
+    .filterBounds(AOI)
+    .mosaic()
+    .resample("bicubic")
+    .rename('sti')
+
+    
+    lsPrepWithMetadata = lsPrepWithMetadata.map(function(img){
+      return img.addBands(cti).addBands(spi).addBands(sti)
+    }
+  
+  }
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//                Add Height Above Nearest Drainage (HAND) Hydrology
+//
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+  if (addHANDHydro){
+    print('Adding Height Above Nearest Drainage (HAND) Hydrology')
+    // grab SRTM Data
+    
+    var hand30_100 = ee.ImageCollection("users/gena/global-hand/hand-100")
+    .filterBounds(AOI)
+    .mosaic()
+    .resample("bicubic")
+    .rename('hand30_100m')
+    var hand30_1000 = ee.Image("users/gena/GlobalHAND/30m/hand-1000")
+    .resample("bicubic")
+    .rename('hand30_1k')
+    var hand90_1000 = ee.Image("users/gena/GlobalHAND/90m-global/hand-1000")
+    .resample("bicubic")
+    .rename('hand90_1k')
+    
+    lsPrepWithMetadata = lsPrepWithMetadata.map(function(img){
+      return img.addBands(hand30_100).addBands(hand30_1000).addBands(hand90_1000)
+    }
+  
+  }  
   
   
   // =======================================================
@@ -809,177 +990,6 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
         
         // Add Additional Criteria you want to include to output CSV
         
-  ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  //
-  //                Apply SRTM Elevation
-  //
-  ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  
-        
-        if (addElevation){
-          print('Adding SRTM Elevation')
-          // grab SRTM Data
-          var srtm = ee.Image("USGS/SRTMGL1_003")
-            .resample("bicubic")
-            .select(['elevation'],['demSRTM'])
-           
-          var PI = ee.Image.constant(ee.Number.expression('Math.PI', null))
-          // grab Aspect
-          var aspect = ee.Terrain.aspect(srtm);
-          // grab Slope
-          var slope = ee.Terrain.slope(srtm)
-          // Grab Folded Aspect
-          var aspectRadians = aspect.multiply(0.0174533)
-          // grab Sin and Cosine Aspect
-          // https://www.researchgate.net/post/How_to_use_aspects_ie_N_NE_SE_etc_in_PCA_or_CCA_for_analysis_especially_using_PAST
-          var sinAspect = aspectRadians.sin().rename("sinAspect")
-          var cosAspect = aspectRadians.cos().rename("cosAspect")
-          
-          var slopeRadians = slope.multiply(0.0174533)
-        
-          // //Calculate heat load index, based on Theobald et al (2015)
-          // //https://github.com/zachlevitt/earth-engine/blob/master/topoModules.md#theobaldhlihttps://github.com/zachlevitt/earth-engine/blob/master/topoModules.md#theobaldhli
-        
-          var foldedAspect = aspectRadians.subtract(ee.Number(4.3196899)).abs().multiply(ee.Number(-1)).add(PI).abs().rename('foldedAspect')
-          var theobaldHLI = (slopeRadians.cos().multiply(ee.Number(1.582)).multiply(ee.Number(0.82886954044))).subtract(foldedAspect.cos().multiply(ee.Number(1.5)).multiply(slopeRadians.sin().multiply(ee.Number(0.55944194062)))).subtract(slopeRadians.sin().multiply(ee.Number(0.262)).multiply(ee.Number(0.55944194062))).add(foldedAspect.sin().multiply(ee.Number(0.607)).multiply(slopeRadians.sin())).add(ee.Number(-1.467)).rename('HLI');
-          
-          // Add Topographic Posidition Index
-          var mean01 = srtm.focalMean(5.5, 'square');
-          var tpi11 = srtm.subtract(mean01).rename("tpi11")
-          var mean02 = srtm.focalMean(10.5, 'square');
-          var tpi21 = srtm.subtract(mean02).rename("tpi21")
-          var mean03 = srtm.focalMean(20.5, 'square');
-          var tpi41 = srtm.subtract(mean03).rename("tpi41")
-          
-          // Stack Terrain Variables
-          var newTerrainVariable = srtm.addBands(slope).addBands(sinAspect).addBands(cosAspect)//.addBands(NorthnessExpo).addBands(EastnessExpo)
-            .addBands(tpi11).addBands(tpi21).addBands(tpi41).addBands(theobaldHLI)//.addBands(foldedAspect)
-          
-          gediMasterLS = gediMasterLS.addBands(newTerrainVariable)
-        
-        }
-        
-  ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  //
-  //                Add ESA Global Landcover 2021
-  //
-  ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  
-        if (addESALandcover){
-          print('Adding ESA Global Landcover 2021 Landuse and Landcover')
-          // grab SRTM Data
-          var esaLandcover = ee.ImageCollection('ESA/WorldCover/v200').first()
-          .select(['Map'],['esaLC_2021'])
-          .unmask(9999)
-          gediMasterLS = gediMasterLS.addBands(esaLandcover)
-        
-        }
-  ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  //
-  //                Add ESA Forest Types 2019
-  //
-  ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  
-        if (addESAForestTypes){
-          print('Adding ESA Forest Types')
-          // grab SRTM Data
-          var esaForestType = ee.Image('COPERNICUS/Landcover/100m/Proba-V-C3/Global/2019')
-          .select(['forest_type'],['esaFT_2019'])
-          .unmask(9999)
-          gediMasterLS = gediMasterLS.addBands(esaForestType)
-        
-        }
-        
-  ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  //
-  //                Add Global Forest Types
-  //
-  ///////////////////////////////////////////////////////////////////////////////////////////////////////
-  
-        if (addJRCGlobalForestTypes){
-          print('Adding JRC Global Forest Types')
-          var GFT2020 = ee.ImageCollection('JRC/GFC2020_subtypes/V0').mosaic()
-          .rename('jrcGFT_2020')
-          .unmask(9999)
-          
-          gediMasterLS = gediMasterLS.addBands(GFT2020)
-        
-        }
-  ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  //
-  //                Add Hansen Global Tree Loss
-  //
-  ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  
-        if (addHansenTreeLoss){
-          print('Adding Hansen Tree Loss')
-          // grab SRTM Data
-          
-          var hansenTreeLoss = ee.Image('UMD/hansen/global_forest_change_2024_v1_12')
-          .select(['lossyear','loss','gain'],['hnsnLossYr','hnsnLoss','hnsnGain'])
-          .unmask(9999)
-          
-        
-          gediMasterLS = gediMasterLS.addBands(hansenTreeLoss)
-        
-        }
-        
-  ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  //
-  //                Add Flow Index
-  //
-  ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  
-        if (addFlowIndex){
-          print('Adding Flow Index')
-          // grab SRTM Data
-          
-          var cti = ee.ImageCollection("projects/sat-io/open-datasets/HYDROGRAPHY90/flow_index/cti")
-          .filterBounds(AOI)
-          .mosaic()
-          .resample("bicubic")
-          .rename('cti')
-          var spi = ee.ImageCollection("projects/sat-io/open-datasets/HYDROGRAPHY90/flow_index/spi")
-          .filterBounds(AOI)
-          .mosaic()
-          .resample("bicubic")
-          .rename('spi')
-          var sti = ee.ImageCollection("projects/sat-io/open-datasets/HYDROGRAPHY90/flow_index/sti")
-          .filterBounds(AOI)
-          .mosaic()
-          .resample("bicubic")
-          .rename('sti')
-          
-        
-          gediMasterLS = gediMasterLS.addBands(cti).addBands(spi).addBands(sti)
-        
-        }
-  
-  ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  //
-  //                Add Height Above Nearest Drainage (HAND) Hydrology
-  //
-  ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  
-        if (addHANDHydro){
-          print('Adding Height Above Nearest Drainage (HAND) Hydrology')
-          // grab SRTM Data
-          
-          var hand30_100 = ee.ImageCollection("users/gena/global-hand/hand-100")
-          .filterBounds(AOI)
-          .mosaic()
-          .resample("bicubic")
-          .rename('hand30_100m')
-          var hand30_1000 = ee.Image("users/gena/GlobalHAND/30m/hand-1000")
-          .resample("bicubic")
-          .rename('hand30_1k')
-          var hand90_1000 = ee.Image("users/gena/GlobalHAND/90m-global/hand-1000")
-          .resample("bicubic")
-          .rename('hand90_1k')
-          
-          gediMasterLS = gediMasterLS.addBands(hand30_100).addBands(hand30_1000).addBands(hand90_1000)
-        
-        }
         
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   //
