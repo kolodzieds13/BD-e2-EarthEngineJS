@@ -888,8 +888,7 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
       return img.addBands(hand30_100).addBands(hand30_1000).addBands(hand90_1000)
     }
   
-  }  
-  
+  }
   
   // =======================================================
   // 3. CONVERT GEDI TO POINTS
@@ -988,9 +987,7 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
         // Quality mosaic - selects closest valid pixel
         var gediMasterLS = matchesWithDiff.qualityMosaic('quality');
         
-        // Add Additional Criteria you want to include to output CSV
-        
-        
+        // Final Prep before sampling:
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   //
   //                Final Updates to Data
@@ -1034,9 +1031,14 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
           gediMasterLS = gediMasterLS.addBands(glcmDNB,null,true)
         }  
         
-        print(gediMasterLS.bandNames,"Final Band Names")
-  
+        print(gediMasterLS.bandNames,"Final Band Names")        
         
+        
+        
+        
+        // Add Additional Criteria you want to include to output CSV
+        
+
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   //
   //                Convert Raster to Points and Sample
@@ -1092,7 +1094,7 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
     
     // Calculate absolute difference between cover and NDVI for each feature
     var sampledWithGeoDiff = sampledPoints.map(function(feat) {
-      var ndvi = ee.Number(feat.get('NDVI')).divide(10000);
+      var ndvi = ee.Number(feat.get('NDVI'));
       var cover = ee.Number(feat.get('cover'));  // Assumes 'cover' exists in GEDI data
       
       // Calculate absolute difference
