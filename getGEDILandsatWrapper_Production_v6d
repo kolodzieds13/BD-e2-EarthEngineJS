@@ -1135,7 +1135,7 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
   Export.table.toDrive({
     collection: sampledPoints,
     description: outName+"_tile"+IDs+"_"+startYear.toString()+"_"+endYear.toString()+"_"+startJulian.toString()+"_"+endJulian.toString()+"_"+dateToday,
-    folder: 'outDir',
+    folder: outDir,
     fileFormat: 'CSV'
   });
   
