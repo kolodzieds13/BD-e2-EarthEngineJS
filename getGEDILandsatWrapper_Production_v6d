@@ -638,6 +638,41 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
   
   print("Landsat Collection Size:", lsPrep_wIndicies.size());
   
+  // TEST Delete Later
+  getImagesLib.exportToDriveWrapper(
+    image_01.float(),
+    'TEST_LandsatTOA_Date20190429_v99_NearestNoSnap_99x_v3_Optimized_Img01',
+    'testImg',
+    AOI,
+    30,
+    imgCRS,
+    null,
+    // args.transform,
+    -32768);
+    
+  getImagesLib.exportToDriveWrapper(
+    image_02.float(),
+    'TEST_LandsatTOA_Date20190429_v99_NearestNoSnap_99x_v3_Optimized_Img02',
+    'testImg',
+    AOI,
+    30,
+    imgCRS,
+    null,
+    // args.transform,
+    -32768);
+    
+  getImagesLib.exportToDriveWrapper(
+    image_03.float(),
+    'TEST_LandsatTOA_Date20190429_v99_NearestNoSnap_99x_v3_Optimized_Img03',
+    'testImg',
+    AOI,
+    30,
+    imgCRS,
+    null,
+    // args.transform,
+    -32768);
+  
+  
     //////////////////////////////////////////////////////////////////
   //
   //             Add GLCM
