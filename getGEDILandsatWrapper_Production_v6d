@@ -638,37 +638,59 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
   
   print("Landsat Collection Size:", lsPrep_wIndicies.size());
   
+  
+  var foundImages = lsPrep_wIndicies//ee.ImageCollection(colID)
+    .filterBounds(AOI) // Look for ANY image covering this point
+    // .filterDate(startDate, endDate) // Look within the +/- 1 day window
+    .filterDate('2019-12-01', '2019-12-20'); // Look within the +/- 1 day window
+  
+  // Print results to Console to see what was found
+  print('Search Results:', foundImages);
+  
+  // =======================================================
+  // 4. VISUALIZATION
+  // =======================================================
+  
+  var lsColList = foundImages.toList(foundImages.size())
+  var image_01 = ee.Image(lsColList.get(0))
+  var image_02 = ee.Image(lsColList.get(1))
+  var image_03 = ee.Image(lsColList.get(2))
+  
+  Map.addLayer(image_01,{},"Image 02")
+  
+
+  
   // TEST Delete Later
   getImagesLib.exportToDriveWrapper(
     image_01.float(),
-    'TEST_LandsatTOA_Date20190429_v99_NearestNoSnap_99x_v3_Optimized_Img01',
+    'TEST_LandsatRCR_December_v99_NearestNoSnap_99x_v3_Optimized_Img01',
     'testImg',
     AOI,
-    30,
-    imgCRS,
-    null,
+    null,//30,
+    'EPSG:32610',
+    [30,0,397185,0,-30,5531415],
     // args.transform,
     -32768);
     
   getImagesLib.exportToDriveWrapper(
     image_02.float(),
-    'TEST_LandsatTOA_Date20190429_v99_NearestNoSnap_99x_v3_Optimized_Img02',
+    'TEST_LandsatRCR_December_v99_NearestNoSnap_99x_v3_Optimized_Img02',
     'testImg',
     AOI,
-    30,
-    imgCRS,
-    null,
+    null,//30,
+    'EPSG:32610',
+    [30,0,397185,0,-30,5531415],
     // args.transform,
     -32768);
     
   getImagesLib.exportToDriveWrapper(
     image_03.float(),
-    'TEST_LandsatTOA_Date20190429_v99_NearestNoSnap_99x_v3_Optimized_Img03',
+    'TEST_LandsatRCR_December_v99_NearestNoSnap_99x_v3_Optimized_Img03',
     'testImg',
     AOI,
-    30,
-    imgCRS,
-    null,
+    null,//30,
+    'EPSG:32610',
+    [30,0,397185,0,-30,5531415],
     // args.transform,
     -32768);
   
