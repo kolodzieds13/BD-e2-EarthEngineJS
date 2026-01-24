@@ -655,10 +655,15 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
   var image_01 = ee.Image(lsColList.get(0))
   var image_02 = ee.Image(lsColList.get(1))
   var image_03 = ee.Image(lsColList.get(2))
+  var image_04 = ee.Image(lsColList.get(3))
   
-  Map.addLayer(image_01,{},"Image 02")
+  Map.addLayer(image_01,{},"Image 01")
+  Map.addLayer(image_02,{},"Image 02")
+  Map.addLayer(image_03,{},"Image 03")
+  Map.addLayer(image_04,{},"Image 04")
+  Map.addLayer(AOI)
   
-
+hello
   
   // TEST Delete Later
   getImagesLib.exportToDriveWrapper(
