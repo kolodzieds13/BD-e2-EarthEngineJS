@@ -752,7 +752,7 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
     
     lsPrepWithMetadata = lsPrepWithMetadata.map(function(img){
       return img.addBands(newTerrainVariable)
-    }
+    })
   
   }
   
@@ -771,7 +771,7 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
     
     lsPrepWithMetadata = lsPrepWithMetadata.map(function(img){
       return img.addBands(esaLandcover)
-    }
+    })
     
   
   }
@@ -790,7 +790,7 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
     
     lsPrepWithMetadata = lsPrepWithMetadata.map(function(img){
       return img.addBands(esaForestType)
-    }
+    })
   
   }
   
@@ -810,7 +810,7 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
 
     lsPrepWithMetadata = lsPrepWithMetadata.map(function(img){
       return img.addBands(GFT2020)
-    }
+    })
   
   }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -829,7 +829,7 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
     
     lsPrepWithMetadata = lsPrepWithMetadata.map(function(img){
       return img.addBands(hansenTreeLoss)
-    }
+    })
     
   }
   
@@ -862,7 +862,7 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
     
     lsPrepWithMetadata = lsPrepWithMetadata.map(function(img){
       return img.addBands(cti).addBands(spi).addBands(sti)
-    }
+    })
   
   }
 
@@ -890,7 +890,7 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
     
     lsPrepWithMetadata = lsPrepWithMetadata.map(function(img){
       return img.addBands(hand30_100).addBands(hand30_1000).addBands(hand90_1000)
-    }
+    })
   
   }
   
