@@ -65,7 +65,7 @@ var applyNDVIFilter = false
 var addElevation = true
 // Add GLCM EVI Data:
 // This will apply a GLCM analysis against "EVI" for all Landsat Images. Can be important but will add significant processing time!
-var addGLCMEVI = false
+var addGLCMEVI = true
 // This will apply a GLCM analysis against "EVI" for all Landsat Images. Can be important but will add significant processing time!
 var addGLCMvarNIR = true
 
