@@ -67,7 +67,7 @@ var searchWindowDays = 20
 var applyNDVIFilter = false
 // Add SRTM Elevation Data
 // Generally recommended as elevation is often important when modeling agbd
-var addElevation = false
+var addElevation = true
 // Add GLCM EVI Data:
 // This will apply a GLCM analysis against "EVI" for all Landsat Images. Can be important but will add significant processing time!
 var addGLCMEVI = false
@@ -1066,7 +1066,7 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
           .copyProperties(gediFeature,null,['landsat_matches']);
         
         return sampledFeature;
-      })//()
+      })()
     );
     
     return ee.Feature(result);
