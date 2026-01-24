@@ -433,6 +433,8 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
   finalGedi_v2 = finalGedi_v2.map(addLatLon)
   // finalGedi_v2 = finalGedi_v2.map(addDateGEDI)
 
+
+  var roi = AOI.geometry().bounds(100,gediProj)
   
   //////////////////////////////////////////////////////////////////
   //
@@ -800,7 +802,9 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
 
   if (addJRCGlobalForestTypes){
     print('Adding JRC Global Forest Types')
-    var GFT2020 = ee.ImageCollection('JRC/GFC2020_subtypes/V0').mosaic()
+    var GFT2020 = ee.ImageCollection('JRC/GFC2020_subtypes/V0')
+    .filterBounds(roi)
+    .mosaic()
     .rename('jrcGFT_2020')
     .unmask(9999)
 
@@ -840,17 +844,17 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
     // grab SRTM Data
     
     var cti = ee.ImageCollection("projects/sat-io/open-datasets/HYDROGRAPHY90/flow_index/cti")
-    .filterBounds(AOI)
+    .filterBounds(roi)
     .mosaic()
     .resample("bicubic")
     .rename('cti')
     var spi = ee.ImageCollection("projects/sat-io/open-datasets/HYDROGRAPHY90/flow_index/spi")
-    .filterBounds(AOI)
+    .filterBounds(roi)
     .mosaic()
     .resample("bicubic")
     .rename('spi')
     var sti = ee.ImageCollection("projects/sat-io/open-datasets/HYDROGRAPHY90/flow_index/sti")
-    .filterBounds(AOI)
+    .filterBounds(roi)
     .mosaic()
     .resample("bicubic")
     .rename('sti')
@@ -873,7 +877,7 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
     // grab SRTM Data
     
     var hand30_100 = ee.ImageCollection("users/gena/global-hand/hand-100")
-    .filterBounds(AOI)
+    .filterBounds(roi)
     .mosaic()
     .resample("bicubic")
     .rename('hand30_100m')
@@ -895,8 +899,6 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
   // =======================================================
   
   print(finalGedi_v2,'finalGedi_v2')
-  
-  var roi = AOI.geometry().bounds(100,gediProj)
   
   var gediPoints = finalGedi_v2.map(function(img) {
     var points = img.sample({
