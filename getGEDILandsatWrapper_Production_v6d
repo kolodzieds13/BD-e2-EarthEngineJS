@@ -761,41 +761,121 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
   
   Map.addLayer(AOI)
   
-hello
+
+  var exportPathLS = 'projects/ee-kolodzieds13/assets/TestIMG'
+  var lsName = 'LandsatRCR_December_01_TDOM'
+  // Export to Asset
+  getImagesLib.exportToAssetWrapper(
+     image_01,
+     lsName,
+     exportPathLS+'/'+lsName,
+     {'.default':'sample'},
+     AOI,
+     null,//scale
+     'EPSG:32610',
+     [30,0,-2361915,0,-30,3177735], // transform
+     -32768)
+     
+  var lsName2 = 'LandsatRCR_December_02_TDOM'
+  // Export to Asset
+  getImagesLib.exportToAssetWrapper(
+     image_02,
+     lsName2,
+     exportPathLS+'/'+lsName2,
+     {'.default':'sample'},
+     AOI,
+     null,//scale
+     'EPSG:32610',
+     [30,0,-2361915,0,-30,3177735], // transform
+     -32768)
+     
+  var lsName3 = 'LandsatRCR_December_03_TDOM'
+  // Export to Asset
+  getImagesLib.exportToAssetWrapper(
+     image_03,
+     lsName3,
+     exportPathLS+'/'+lsName3,
+     {'.default':'sample'},
+     AOI,
+     null,//scale
+     'EPSG:32610',
+     [30,0,-2361915,0,-30,3177735], // transform
+     -32768)
+     
+     
+  var lsName01b = 'LandsatTOA_December_01'
+  // Export to Asset
+  getImagesLib.exportToAssetWrapper(
+     image_01,
+     lsName01b,
+     exportPathLS+'/'+lsName01b,
+     {'.default':'sample'},
+     AOI,
+     null,//scale
+     'EPSG:32610',
+     [30,0,-2361915,0,-30,3177735], // transform
+     -32768)
+     
+  var lsName2b = 'LandsatTOA_December_02'
+  // Export to Asset
+  getImagesLib.exportToAssetWrapper(
+     image_02,
+     lsName2b,
+     exportPathLS+'/'+lsName2b,
+     {'.default':'sample'},
+     AOI,
+     null,//scale
+     'EPSG:32610',
+     [30,0,-2361915,0,-30,3177735], // transform
+     -32768)
+     
+  var lsName3b = 'LandsatTOA_December_03'
+  // Export to Asset
+  getImagesLib.exportToAssetWrapper(
+     image_03,
+     lsName3b,
+     exportPathLS+'/'+lsName3b,
+     {'.default':'sample'},
+     AOI,
+     null,//scale
+     'EPSG:32610',
+     [30,0,-2361915,0,-30,3177735], // transform
+     -32768)
   
+hello    
   // TEST Delete Later
-  getImagesLib.exportToDriveWrapper(
-    image_01.float(),
-    'TEST_LandsatRCR_December_v99_NearestNoSnap_99x_v3_Optimized_Img01',
-    'testImg',
-    AOI,
-    null,//30,
-    'EPSG:32610',
-    [30,0,397185,0,-30,5531415],
-    // args.transform,
-    -32768);
+  // getImagesLib.exportToDriveWrapper(
+  //   image_01.float(),
+  //   'TEST_LandsatRCR_December_v99_NearestNoSnap_99x_v3_Optimized_Img01',
+  //   'testImg',
+  //   AOI,
+  //   null,//30,
+  //   'EPSG:32610',
+  //   [30,0,397185,0,-30,5531415],
+  //   // args.transform,
+  //   -32768);
     
-  getImagesLib.exportToDriveWrapper(
-    image_02.float(),
-    'TEST_LandsatRCR_December_v99_NearestNoSnap_99x_v3_Optimized_Img02',
-    'testImg',
-    AOI,
-    null,//30,
-    'EPSG:32610',
-    [30,0,397185,0,-30,5531415],
-    // args.transform,
-    -32768);
+  // getImagesLib.exportToDriveWrapper(
+  //   image_02.float(),
+  //   'TEST_LandsatRCR_December_v99_NearestNoSnap_99x_v3_Optimized_Img02',
+  //   'testImg',
+  //   AOI,
+  //   null,//30,
+  //   'EPSG:32610',
+  //   [30,0,397185,0,-30,5531415],
+  //   // args.transform,
+  //   -32768);
     
-  getImagesLib.exportToDriveWrapper(
-    image_03.float(),
-    'TEST_LandsatRCR_December_v99_NearestNoSnap_99x_v3_Optimized_Img03',
-    'testImg',
-    AOI,
-    null,//30,
-    'EPSG:32610',
-    [30,0,397185,0,-30,5531415],
-    // args.transform,
-    -32768);
+  // getImagesLib.exportToDriveWrapper(
+  //   image_03.float(),
+  //   'TEST_LandsatRCR_December_v99_NearestNoSnap_99x_v3_Optimized_Img03',
+  //   'testImg',
+  //   AOI,
+  //   null,//30,
+  //   'EPSG:32610',
+  //   [30,0,397185,0,-30,5531415],
+  //   // args.transform,
+  //   -32768);
   
   
     //////////////////////////////////////////////////////////////////
