@@ -639,83 +639,83 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
   print("Landsat Collection Size:", lsPrep_wIndicies.size());
   
   
-  var foundImages = lsPrep_wIndicies//ee.ImageCollection(colID)
-    .filterBounds(AOI) // Look for ANY image covering this point
-    // .filterDate(startDate, endDate) // Look within the +/- 1 day window
-    .filterDate('2019-12-01', '2019-12-20'); // Look within the +/- 1 day window
+  // var foundImages = lsPrep_wIndicies//ee.ImageCollection(colID)
+  //   .filterBounds(AOI) // Look for ANY image covering this point
+  //   // .filterDate(startDate, endDate) // Look within the +/- 1 day window
+  //   .filterDate('2019-12-01', '2019-12-20'); // Look within the +/- 1 day window
   
-  // Print results to Console to see what was found
-  print('Search Results:', foundImages);
+  // // Print results to Console to see what was found
+  // print('Search Results:', foundImages);
   
-  // =======================================================
-  // 4. VISUALIZATION
-  // =======================================================
+  // // =======================================================
+  // // 4. VISUALIZATION
+  // // =======================================================
   
-  var lsColList = foundImages.toList(foundImages.size())
-  var image_01 = ee.Image(lsColList.get(0))
-  var image_02 = ee.Image(lsColList.get(1))
-  var image_03 = ee.Image(lsColList.get(2))
-  var image_04 = ee.Image(lsColList.get(3))
+  // var lsColList = foundImages.toList(foundImages.size())
+  // var image_01 = ee.Image(lsColList.get(0))
+  // var image_02 = ee.Image(lsColList.get(1))
+  // var image_03 = ee.Image(lsColList.get(2))
+  // var image_04 = ee.Image(lsColList.get(3))
   
-  Map.addLayer(image_01,{},"Image 01")
-  Map.addLayer(image_02,{},"Image 02")
-  Map.addLayer(image_03,{},"Image 03")
-  Map.addLayer(image_04,{},"Image 04")
+  // Map.addLayer(image_01,{},"Image 01")
+  // Map.addLayer(image_02,{},"Image 02")
+  // Map.addLayer(image_03,{},"Image 03")
+  // Map.addLayer(image_04,{},"Image 04")
   
-  // TEst Landsat T1_TOA
-    // =======================================================
-  // 2. HELPER FUNCTIONS
-  // =======================================================
+  // // TEst Landsat T1_TOA
+  //   // =======================================================
+  // // 2. HELPER FUNCTIONS
+  // // =======================================================
   
-  var maskCloudsTOA = function(image) {
-    var qa = image.select('QA_PIXEL');
-    var mask = qa.bitwiseAnd(1 << 1).eq(0)
-          .and(qa.bitwiseAnd(1 << 3).eq(0))
-          .and(qa.bitwiseAnd(1 << 4).eq(0));
-    return image.updateMask(mask);
-  };
+  // var maskCloudsTOA = function(image) {
+  //   var qa = image.select('QA_PIXEL');
+  //   var mask = qa.bitwiseAnd(1 << 1).eq(0)
+  //         .and(qa.bitwiseAnd(1 << 3).eq(0))
+  //         .and(qa.bitwiseAnd(1 << 4).eq(0));
+  //   return image.updateMask(mask);
+  // };
   
-  var addIndices = function(image) {
-    var ndvi = image.normalizedDifference(['nir', 'red']).rename('NDVI');
-    var nbr = image.normalizedDifference(['nir', 'swir2']).rename('NBR');
-    var evi = image.expression(
-      '2.5 * ((NIR - RED) / (NIR + 6 * RED - 7.5 * BLUE + 1))', {
-        'NIR': image.select('nir'),
-        'RED': image.select('red'),
-        'BLUE': image.select('blue')
-      }).rename('EVI');
-    return image.addBands([ndvi, nbr, evi]);
-  };
+  // var addIndices = function(image) {
+  //   var ndvi = image.normalizedDifference(['nir', 'red']).rename('NDVI');
+  //   var nbr = image.normalizedDifference(['nir', 'swir2']).rename('NBR');
+  //   var evi = image.expression(
+  //     '2.5 * ((NIR - RED) / (NIR + 6 * RED - 7.5 * BLUE + 1))', {
+  //       'NIR': image.select('nir'),
+  //       'RED': image.select('red'),
+  //       'BLUE': image.select('blue')
+  //     }).rename('EVI');
+  //   return image.addBands([ndvi, nbr, evi]);
+  // };
   
-  // =======================================================
-  // 3. CONVERT GEDI TO POINTS
-  // =======================================================
+  // // =======================================================
+  // // 3. CONVERT GEDI TO POINTS
+  // // =======================================================
   
-  print(finalGedi_v2,'finalGedi_v2')
+  // print(finalGedi_v2,'finalGedi_v2')
   
-  var gediPoints = finalGedi_v2.map(function(img) {
-    var points = img.sample({
-      region: roi,
-      projection: gediProj,
-      geometries: true,
-      dropNulls: true
-    });
+  // var gediPoints = finalGedi_v2.map(function(img) {
+  //   var points = img.sample({
+  //     region: roi,
+  //     projection: gediProj,
+  //     geometries: true,
+  //     dropNulls: true
+  //   });
     
-    var gediDate = img.date().format('YYYYMMdd');
-    var gediTimestamp = img.date().millis();
+  //   var gediDate = img.date().format('YYYYMMdd');
+  //   var gediTimestamp = img.date().millis();
     
-    points = points.map(function(feat) {
-      return feat.set({
-        'gediDate': gediDate,
-        'system:time_start': gediTimestamp
-      });
-    });
+  //   points = points.map(function(feat) {
+  //     return feat.set({
+  //       'gediDate': gediDate,
+  //       'system:time_start': gediTimestamp
+  //     });
+  //   });
     
-    return points;
-  }).flatten();
+  //   return points;
+  // }).flatten();
   
-  print('GEDI Points Count:', gediPoints.size());
-  Map.addLayer(gediPoints,{},"gediPoints")
+  // print('GEDI Points Count:', gediPoints.size());
+  // Map.addLayer(gediPoints,{},"gediPoints")
   
   // =======================================================
   // 4. LANDSAT PRE-PROCESSING (SIMPLIFIED - NO addLSDate)
@@ -723,126 +723,126 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
   
   
  
-  // Landsat General Collection
-  // var l7 = ee.ImageCollection("LANDSAT/LE07/C02/T1_TOA");
-  var l8 = ee.ImageCollection("LANDSAT/LC08/C02/T1_TOA");
-  var l9 = ee.ImageCollection("LANDSAT/LC09/C02/T1_TOA");
+  // // Landsat General Collection
+  // // var l7 = ee.ImageCollection("LANDSAT/LE07/C02/T1_TOA");
+  // var l8 = ee.ImageCollection("LANDSAT/LC08/C02/T1_TOA");
+  // var l9 = ee.ImageCollection("LANDSAT/LC09/C02/T1_TOA");
   
-  var lsPrepTOA = l8.merge(l9)
-    .filterBounds(AOI)
-    .filter(ee.Filter.calendarRange(startYear,endYear,'year'))
-    .filter(ee.Filter.calendarRange(startJulian,endJulian))
-    .filter(ee.Filter.lt('CLOUD_COVER', 80))
-    .map(maskCloudsTOA)
-    .select(['B2', 'B3', 'B4', 'B5', 'B6', 'B7'], 
-            ['blue', 'green', 'red', 'nir', 'swir1', 'swir2'])
-    .map(addIndices);
-  
-  
-  var foundImages_TOA = lsPrepTOA//ee.ImageCollection(colID)
-    .filterBounds(AOI) // Look for ANY image covering this point
-    // .filterDate(startDate, endDate) // Look within the +/- 1 day window
-    .filterDate('2019-12-01', '2019-12-20'); // Look within the +/- 1 day window
-  
-  // Print results to Console to see what was found
-  print('Search Results:', foundImages_TOA);
-  
-  var lsColList00 = foundImages_TOA.toList(foundImages_TOA.size())
-  var image_01_TOA = ee.Image(lsColList00.get(0))
-  var image_02_TOA = ee.Image(lsColList00.get(1))
-  var image_03_TOA = ee.Image(lsColList00.get(2))
-  // var image_04_TOA = ee.Image(lsColList00.get(3))
-  
-  Map.addLayer(image_01_TOA,{},"Image 01")
-  Map.addLayer(image_02_TOA,{},"Image 02")
-  Map.addLayer(image_03_TOA,{},"Image 03")
-  // Map.addLayer(image_04_TOA,{},"Image 04")
+  // var lsPrepTOA = l8.merge(l9)
+  //   .filterBounds(AOI)
+  //   .filter(ee.Filter.calendarRange(startYear,endYear,'year'))
+  //   .filter(ee.Filter.calendarRange(startJulian,endJulian))
+  //   .filter(ee.Filter.lt('CLOUD_COVER', 80))
+  //   .map(maskCloudsTOA)
+  //   .select(['B2', 'B3', 'B4', 'B5', 'B6', 'B7'], 
+  //           ['blue', 'green', 'red', 'nir', 'swir1', 'swir2'])
+  //   .map(addIndices);
   
   
-  Map.addLayer(AOI)
+  // var foundImages_TOA = lsPrepTOA//ee.ImageCollection(colID)
+  //   .filterBounds(AOI) // Look for ANY image covering this point
+  //   // .filterDate(startDate, endDate) // Look within the +/- 1 day window
+  //   .filterDate('2019-12-01', '2019-12-20'); // Look within the +/- 1 day window
+  
+  // // Print results to Console to see what was found
+  // print('Search Results:', foundImages_TOA);
+  
+  // var lsColList00 = foundImages_TOA.toList(foundImages_TOA.size())
+  // var image_01_TOA = ee.Image(lsColList00.get(0))
+  // var image_02_TOA = ee.Image(lsColList00.get(1))
+  // var image_03_TOA = ee.Image(lsColList00.get(2))
+  // // var image_04_TOA = ee.Image(lsColList00.get(3))
+  
+  // Map.addLayer(image_01_TOA,{},"Image 01")
+  // Map.addLayer(image_02_TOA,{},"Image 02")
+  // Map.addLayer(image_03_TOA,{},"Image 03")
+  // // Map.addLayer(image_04_TOA,{},"Image 04")
+  
+  
+  // Map.addLayer(AOI)
   
 
-  var exportPathLS = 'projects/ee-kolodzieds13/assets/TestIMG'
-  var lsName = 'LandsatRCR_December_01_TDOM'
-  // Export to Asset
-  getImagesLib.exportToAssetWrapper(
-     image_01,
-     lsName,
-     exportPathLS+'/'+lsName,
-     {'.default':'sample'},
-     AOI,
-     null,//scale
-     'EPSG:32610',
-     [30,0,-2361915,0,-30,3177735], // transform
-     -32768)
+  // var exportPathLS = 'projects/ee-kolodzieds13/assets/TestIMG'
+  // var lsName = 'LandsatRCR_December_01_TDOM'
+  // // Export to Asset
+  // getImagesLib.exportToAssetWrapper(
+  //   image_01,
+  //   lsName,
+  //   exportPathLS+'/'+lsName,
+  //   {'.default':'sample'},
+  //   AOI,
+  //   null,//scale
+  //   'EPSG:32610',
+  //   [30,0,-2361915,0,-30,3177735], // transform
+  //   -32768)
      
-  var lsName2 = 'LandsatRCR_December_02_TDOM'
-  // Export to Asset
-  getImagesLib.exportToAssetWrapper(
-     image_02,
-     lsName2,
-     exportPathLS+'/'+lsName2,
-     {'.default':'sample'},
-     AOI,
-     null,//scale
-     'EPSG:32610',
-     [30,0,-2361915,0,-30,3177735], // transform
-     -32768)
+  // var lsName2 = 'LandsatRCR_December_02_TDOM'
+  // // Export to Asset
+  // getImagesLib.exportToAssetWrapper(
+  //   image_02,
+  //   lsName2,
+  //   exportPathLS+'/'+lsName2,
+  //   {'.default':'sample'},
+  //   AOI,
+  //   null,//scale
+  //   'EPSG:32610',
+  //   [30,0,-2361915,0,-30,3177735], // transform
+  //   -32768)
      
-  var lsName3 = 'LandsatRCR_December_03_TDOM'
-  // Export to Asset
-  getImagesLib.exportToAssetWrapper(
-     image_03,
-     lsName3,
-     exportPathLS+'/'+lsName3,
-     {'.default':'sample'},
-     AOI,
-     null,//scale
-     'EPSG:32610',
-     [30,0,-2361915,0,-30,3177735], // transform
-     -32768)
+  // var lsName3 = 'LandsatRCR_December_03_TDOM'
+  // // Export to Asset
+  // getImagesLib.exportToAssetWrapper(
+  //   image_03,
+  //   lsName3,
+  //   exportPathLS+'/'+lsName3,
+  //   {'.default':'sample'},
+  //   AOI,
+  //   null,//scale
+  //   'EPSG:32610',
+  //   [30,0,-2361915,0,-30,3177735], // transform
+  //   -32768)
      
      
-  var lsName01b = 'LandsatTOA_December_01'
-  // Export to Asset
-  getImagesLib.exportToAssetWrapper(
-     image_01,
-     lsName01b,
-     exportPathLS+'/'+lsName01b,
-     {'.default':'sample'},
-     AOI,
-     null,//scale
-     'EPSG:32610',
-     [30,0,-2361915,0,-30,3177735], // transform
-     -32768)
+  // var lsName01b = 'LandsatTOA_December_01'
+  // // Export to Asset
+  // getImagesLib.exportToAssetWrapper(
+  //   image_01,
+  //   lsName01b,
+  //   exportPathLS+'/'+lsName01b,
+  //   {'.default':'sample'},
+  //   AOI,
+  //   null,//scale
+  //   'EPSG:32610',
+  //   [30,0,-2361915,0,-30,3177735], // transform
+  //   -32768)
      
-  var lsName2b = 'LandsatTOA_December_02'
-  // Export to Asset
-  getImagesLib.exportToAssetWrapper(
-     image_02,
-     lsName2b,
-     exportPathLS+'/'+lsName2b,
-     {'.default':'sample'},
-     AOI,
-     null,//scale
-     'EPSG:32610',
-     [30,0,-2361915,0,-30,3177735], // transform
-     -32768)
+  // var lsName2b = 'LandsatTOA_December_02'
+  // // Export to Asset
+  // getImagesLib.exportToAssetWrapper(
+  //   image_02,
+  //   lsName2b,
+  //   exportPathLS+'/'+lsName2b,
+  //   {'.default':'sample'},
+  //   AOI,
+  //   null,//scale
+  //   'EPSG:32610',
+  //   [30,0,-2361915,0,-30,3177735], // transform
+  //   -32768)
      
-  var lsName3b = 'LandsatTOA_December_03'
-  // Export to Asset
-  getImagesLib.exportToAssetWrapper(
-     image_03,
-     lsName3b,
-     exportPathLS+'/'+lsName3b,
-     {'.default':'sample'},
-     AOI,
-     null,//scale
-     'EPSG:32610',
-     [30,0,-2361915,0,-30,3177735], // transform
-     -32768)
+  // var lsName3b = 'LandsatTOA_December_03'
+  // // Export to Asset
+  // getImagesLib.exportToAssetWrapper(
+  //   image_03,
+  //   lsName3b,
+  //   exportPathLS+'/'+lsName3b,
+  //   {'.default':'sample'},
+  //   AOI,
+  //   null,//scale
+  //   'EPSG:32610',
+  //   [30,0,-2361915,0,-30,3177735], // transform
+  //   -32768)
   
-hello    
+  
   // TEST Delete Later
   // getImagesLib.exportToDriveWrapper(
   //   image_01.float(),
