@@ -138,7 +138,7 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
   // Name of Output CSV file
   var outName = 'GEDI_Landsat_Fusion'
   // Name of Output Directory
-  var outDir = "BDe2_Gamma" //This must be created in Google Drive
+  var outDir = "BDe2_Delta" //This must be created in Google Drive
   
   
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -850,18 +850,21 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
     .mosaic()
     .resample("bicubic")
     .rename('cti')
+    .float()
     .unmask(9999)
     var spi = ee.ImageCollection("projects/sat-io/open-datasets/HYDROGRAPHY90/flow_index/spi")
     .filterBounds(roi)
     .mosaic()
     .resample("bicubic")
     .rename('spi')
+    .float()
     .unmask(9999)
     var sti = ee.ImageCollection("projects/sat-io/open-datasets/HYDROGRAPHY90/flow_index/sti")
     .filterBounds(roi)
     .mosaic()
     .resample("bicubic")
     .rename('sti')
+    .float()
     .unmask(9999)
 
     
@@ -886,14 +889,17 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
     .mosaic()
     .resample("bicubic")
     .rename('hand30_100m')
+    .float()
     .unmask(9999)
     var hand30_1000 = ee.Image("users/gena/GlobalHAND/30m/hand-1000")
     .resample("bicubic")
     .rename('hand30_1k')
+    .float()
     .unmask(9999)
     var hand90_1000 = ee.Image("users/gena/GlobalHAND/90m-global/hand-1000")
     .resample("bicubic")
     .rename('hand90_1k')
+    .float()
     .unmask(9999)
     
     lsPrepWithMetadata = lsPrepWithMetadata.map(function(img){
