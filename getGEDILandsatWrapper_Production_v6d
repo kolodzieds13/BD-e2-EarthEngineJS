@@ -70,11 +70,11 @@ var applyNDVIFilter = false
 var addElevation = true
 // Add GLCM EVI Data:
 // This will apply a GLCM analysis against "EVI" for all Landsat Images. Can be important but will add significant processing time!
-var addGLCMEVI = true
+var addGLCMEVI = false
 // This will apply a GLCM analysis against "EVI" for all Landsat Images. Can be important but will add significant processing time!
-var addGLCMvarNIR = false
+var addGLCMvarNIR = true
 
-var addGLCMconSWIR1 = false
+var addGLCMconSWIR1 = true
 // Desired LandsatBands
 // If True, GEDI observation will only record values of blue,green,red,nir,swir1,swir2,NDVI,and EVI
 // This is ideal to minimize GEE computations
@@ -82,20 +82,20 @@ var addGLCMconSWIR1 = false
 var simpleLandsat = true
 // Add ESA Landcover
 // This adds ESA World Cover 2021 v200. 
-var addESALandcover = false
+var addESALandcover = true
 // Add ESA Forest Types 2019
 // Add Forest Types (e.g Broadleave Needle)
-var addESAForestTypes = false
+var addESAForestTypes = true
 // Add JRC Broad Forest Types
 // This will add Primary Forest, Regen Forest, Plantation, Forest
-var addJRCGlobalForestTypes = false
+var addJRCGlobalForestTypes = true
 // Add Hansen Tree Loss
 // This adds hansen tree loss information. 
-var addHansenTreeLoss = false
+var addHansenTreeLoss = true
 // Add HAND Hydrology
-var addHANDHydro = false
+var addHANDHydro = true
 // Add Flow Index
-var addFlowIndex = false
+var addFlowIndex = true
 
 
 
