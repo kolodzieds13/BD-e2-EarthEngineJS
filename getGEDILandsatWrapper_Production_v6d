@@ -598,7 +598,7 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
   // These have been pre-computed for all CONUS for Landsat and Setinel 2 (separately)
   // and are appropriate to use for any time period within the growing season
   // The cloudScore offset is generally some lower percentile of cloudScores on a pixel-wise basis
-  args.preComputedCloudScoreOffset = getImagesLib.getPrecomputedCloudScoreOffsets(cloudScorePctl)["landsat"]//null
+  args.preComputedCloudScoreOffset = getImagesLib.getPrecomputedCloudScoreOffsets(args.cloudScorePctl).landsat; //null
   
   // The TDOM stats are the mean and standard deviations of the two IR bands used in TDOM
   // By default, TDOM uses the nir and swir1 bands
