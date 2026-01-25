@@ -539,7 +539,7 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
   args.applyCloudScore = true;
   args.applyFmaskCloudMask = true;
   
-  args.applyTDOM = false//true;
+  args.applyTDOM = true//true;
   args.applyFmaskCloudShadowMask = true;
   
   args.applyFmaskSnowMask = false//false;
