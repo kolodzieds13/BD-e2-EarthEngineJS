@@ -584,7 +584,7 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
   //    that are often missed
   // (1.5 results in a 1 pixel buffer)(0.5 results in a 0 pixel buffer)
   // (2.5 or 3.5 generally is sufficient)
-  args.dilatePixels = 5;
+  args.dilatePixels = 2.5;
   
   // Choose the resampling method: 'near', 'bilinear', or 'bicubic'
   // Defaults to 'near'
@@ -598,7 +598,7 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
   // These have been pre-computed for all CONUS for Landsat and Setinel 2 (separately)
   // and are appropriate to use for any time period within the growing season
   // The cloudScore offset is generally some lower percentile of cloudScores on a pixel-wise basis
-  args.preComputedCloudScoreOffset = null//getImagesLib.getPrecomputedCloudScoreOffsets(args.cloudScorePctl).landsat;
+  args.preComputedCloudScoreOffset = getImagesLib.getPrecomputedCloudScoreOffsets(cloudScorePctl)["landsat"]//null
   
   // The TDOM stats are the mean and standard deviations of the two IR bands used in TDOM
   // By default, TDOM uses the nir and swir1 bands
