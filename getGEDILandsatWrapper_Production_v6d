@@ -539,7 +539,7 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
   args.applyCloudScore = true;
   args.applyFmaskCloudMask = true;
   
-  args.applyTDOM = true;
+  args.applyTDOM = false//true;
   args.applyFmaskCloudShadowMask = true;
   
   args.applyFmaskSnowMask = false//false;
@@ -661,6 +661,104 @@ var KenobiOrder = Kenobi_TileIDs.map(function(IDs){
   Map.addLayer(image_02,{},"Image 02")
   Map.addLayer(image_03,{},"Image 03")
   Map.addLayer(image_04,{},"Image 04")
+  
+  // TEst Landsat T1_TOA
+    // =======================================================
+  // 2. HELPER FUNCTIONS
+  // =======================================================
+  
+  var maskCloudsTOA = function(image) {
+    var qa = image.select('QA_PIXEL');
+    var mask = qa.bitwiseAnd(1 << 1).eq(0)
+          .and(qa.bitwiseAnd(1 << 3).eq(0))
+          .and(qa.bitwiseAnd(1 << 4).eq(0));
+    return image.updateMask(mask);
+  };
+  
+  var addIndices = function(image) {
+    var ndvi = image.normalizedDifference(['nir', 'red']).rename('NDVI');
+    var nbr = image.normalizedDifference(['nir', 'swir2']).rename('NBR');
+    var evi = image.expression(
+      '2.5 * ((NIR - RED) / (NIR + 6 * RED - 7.5 * BLUE + 1))', {
+        'NIR': image.select('nir'),
+        'RED': image.select('red'),
+        'BLUE': image.select('blue')
+      }).rename('EVI');
+    return image.addBands([ndvi, nbr, evi]);
+  };
+  
+  // =======================================================
+  // 3. CONVERT GEDI TO POINTS
+  // =======================================================
+  
+  print(finalGedi_v2,'finalGedi_v2')
+  
+  var gediPoints = finalGedi_v2.map(function(img) {
+    var points = img.sample({
+      region: roi,
+      projection: gediProj,
+      geometries: true,
+      dropNulls: true
+    });
+    
+    var gediDate = img.date().format('YYYYMMdd');
+    var gediTimestamp = img.date().millis();
+    
+    points = points.map(function(feat) {
+      return feat.set({
+        'gediDate': gediDate,
+        'system:time_start': gediTimestamp
+      });
+    });
+    
+    return points;
+  }).flatten();
+  
+  print('GEDI Points Count:', gediPoints.size());
+  Map.addLayer(gediPoints,{},"gediPoints")
+  
+  // =======================================================
+  // 4. LANDSAT PRE-PROCESSING (SIMPLIFIED - NO addLSDate)
+  // =======================================================
+  
+  
+ 
+  // Landsat General Collection
+  // var l7 = ee.ImageCollection("LANDSAT/LE07/C02/T1_TOA");
+  var l8 = ee.ImageCollection("LANDSAT/LC08/C02/T1_TOA");
+  var l9 = ee.ImageCollection("LANDSAT/LC09/C02/T1_TOA");
+  
+  var lsPrepTOA = l8.merge(l9)
+    .filterBounds(AOI)
+    .filter(ee.Filter.calendarRange(startYear,endYear,'year'))
+    .filter(ee.Filter.calendarRange(startJulian,endJulian))
+    .filter(ee.Filter.lt('CLOUD_COVER', 80))
+    .map(maskCloudsTOA)
+    .select(['B2', 'B3', 'B4', 'B5', 'B6', 'B7'], 
+            ['blue', 'green', 'red', 'nir', 'swir1', 'swir2'])
+    .map(addIndices);
+  
+  
+  var foundImages_TOA = lsPrepTOA//ee.ImageCollection(colID)
+    .filterBounds(AOI) // Look for ANY image covering this point
+    // .filterDate(startDate, endDate) // Look within the +/- 1 day window
+    .filterDate('2019-12-01', '2019-12-20'); // Look within the +/- 1 day window
+  
+  // Print results to Console to see what was found
+  print('Search Results:', foundImages_TOA);
+  
+  var lsColList00 = foundImages_TOA.toList(foundImages_TOA.size())
+  var image_01_TOA = ee.Image(lsColList00.get(0))
+  var image_02_TOA = ee.Image(lsColList00.get(1))
+  var image_03_TOA = ee.Image(lsColList00.get(2))
+  // var image_04_TOA = ee.Image(lsColList00.get(3))
+  
+  Map.addLayer(image_01_TOA,{},"Image 01")
+  Map.addLayer(image_02_TOA,{},"Image 02")
+  Map.addLayer(image_03_TOA,{},"Image 03")
+  // Map.addLayer(image_04_TOA,{},"Image 04")
+  
+  
   Map.addLayer(AOI)
   
 hello
