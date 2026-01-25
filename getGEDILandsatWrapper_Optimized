@@ -920,7 +920,7 @@ var maxDiffFilter = ee.Filter.maxDifference({
 var spatialFilter = ee.Filter.intersects({
   leftField: '.geo',
   rightField: '.geo',
-  maxError: 1000
+  maxError: 100
 });
 
 var joinFilter = ee.Filter.and(maxDiffFilter, spatialFilter);
