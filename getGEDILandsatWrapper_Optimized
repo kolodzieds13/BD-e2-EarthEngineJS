@@ -92,8 +92,8 @@ var endJulian = 365//365
 // Select Start and End Years
 // Note: GEDI Observation are avaliable from 2019 through 2023
 // Year 2023 only has data till March: endJulian no later than 91
-var startYear = 2021
-var endYear= 2021
+var startYear = 2019
+var endYear= 2019
 
 // Define Area of Interest (AOI)
 // This may need to be broken up if area is too large
@@ -117,7 +117,7 @@ var imgTransform = null//null//[25, 0, 248650, 0, -25, 5323275]//[30,0,-2361915,
 // Name of Output CSV file
 var outName = 'GEDI_Landsat_Fusion'
 // Name of Output Directory
-var outDir = "BDe2_Epsilon" //This must be created in Google Drive
+var outDir = "BDe2_Zeta" //This must be created in Google Drive
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -277,7 +277,7 @@ var bandDictionary = {
   "gediL4A":ee.List(['agbd','agbd_pi_lower','agbd_pi_upper','agbd_se','agbd_t','agbd_t_se',
                     'l4_quality_flag','l2_quality_flag','degrade_flag','delta_time',
                     'solar_elevation','beam','sensitivity',
-                    'agbd_a1','agbd_a2','agbd_a3','agbd_a4','agbd_a5','agbd_a6','agbd_a10','selected_algorithm']),
+                    'agbd_a1','agbd_a2','agbd_a3','agbd_a4','agbd_a5','agbd_a6','agbd_a10','selected_algorithm','selected_mode']),
   "gediL2A":ee.List(['delta_time','rh25','rh50', 'rh75','rh95','rh98','elev_lowestmode','digital_elevation_model','digital_elevation_model_srtm','num_detectedmodes']),
   "gediL2B":ee.List(['delta_time','cover','pai']),
   
