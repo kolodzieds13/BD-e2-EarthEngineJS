@@ -6,7 +6,7 @@
 
 var studyArea = ee.FeatureCollection('projects/ee-kolodzieds13/assets/GEDI_EE_StudyArea_GOLD')
 Map.addLayer(studyArea,{},'Study AREA')
-
+Map.centerObject(studyArea, 8); 
 
 
 //Module imports
@@ -36,17 +36,20 @@ var beamType = 'all'
 // Select solor elevation threshold. Filter applies less than condition.
 // i.e. 0 indicated solar-elevation less than 0; indicating night time observation
 var solarElevThres = 0
-// Select Search Window for GEDI vs Landsat. Script will select closest non-masked spectral observation within window.
+// Select Search Window for GEDI vs Landsat. 
+// This will work as +/-(searchWindowDays).
+// Script will select closest non-masked spectral observation within window.
 var searchWindowDays = 20
 // Apply NDVI/Canopy Cover Filter
 // Warning: This technique calculates StDev on the fly and only within the AOI. If you need to split the aoi
 // then the results may not be consistent
 var applyNDVIFilter = false
 // Add SRTM Elevation Data
-// Generally recommended as elevation is often important when modeling agbd
+// Generally recommended as elevation is often important when modeling biomass
 var addElevation = true
 // Add GLCM EVI Data:
-// This will apply a GLCM analysis against "EVI" for all Landsat Images. Can be important but will add significant processing time!
+// This will apply a GLCM analysis against "EVI" for all Landsat Images. 
+// Can be important but will add significant processing time!
 var addGLCMEVI = false
 // This will apply a GLCM analysis variability against "NIR" for all Landsat Images.
 var addGLCMvarNIR = true
@@ -55,7 +58,7 @@ var addGLCMconSWIR1 = true
 // Desired LandsatBands
 // If True, GEDI observation will only record values of blue,green,red,nir,swir1,swir2,NDVI,and EVI
 // This is ideal to minimize GEE computations
-// Select False to include all bands and indices (Band Dictionary located line 150)
+// Select False to include all bands and indices (Band Dictionary located line 250)
 var simpleLandsat = true
 // Add ESA Landcover
 // This adds ESA World Cover 2021 v200. 
@@ -69,7 +72,7 @@ var addJRCGlobalForestTypes = true
 // Add Hansen Tree Loss
 // This adds hansen tree loss information. 
 var addHansenTreeLoss = true
-// Add HAND Hydrology
+// Add Height Above Nearest Drainage (HAND) Hydrology
 var addHANDHydro = true
 // Add Flow Index
 var addFlowIndex = true
