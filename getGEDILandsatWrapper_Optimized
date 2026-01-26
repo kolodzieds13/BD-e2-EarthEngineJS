@@ -276,8 +276,9 @@ var bandDictionary = {
   
   "gediL4A":ee.List(['agbd','agbd_pi_lower','agbd_pi_upper','agbd_se','agbd_t','agbd_t_se',
                     'l4_quality_flag','l2_quality_flag','degrade_flag','delta_time',
-                    'solar_elevation','beam','sensitivity']),
-  "gediL2A":ee.List(['delta_time','rh25','rh50', 'rh75','rh95','rh98','elev_lowestmode','digital_elevation_model','digital_elevation_model_srtm']),
+                    'solar_elevation','beam','sensitivity',
+                    'agbd_a1','agbd_a2','agbd_a3','agbd_a4','agbd_a5','agbd_a6','agbd_a10','selected_algorithm']),
+  "gediL2A":ee.List(['delta_time','rh25','rh50', 'rh75','rh95','rh98','elev_lowestmode','digital_elevation_model','digital_elevation_model_srtm','num_detectedmodes']),
   "gediL2B":ee.List(['delta_time','cover','pai']),
   
 }
