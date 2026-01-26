@@ -28,7 +28,7 @@ var dateToday = yearToday+monthToday+dayToday
 // Select GEDI sensitivity
 // Higher Sensity equals greater variability in agbd.
 // 0.95 is more commonly used to broad uses but it is generally prefered to used 0.98
-var sensitivityThres = 0.98
+var sensitivityThres = 0.05//0.98
 // Select Beam Type: Options are 'cover','power', or 'all'
 // Power beams are 'stronger' and results in more accurate measurement. However, power beams
 // may be limited and thus it may be better to include all observations 'all'
@@ -117,7 +117,7 @@ var imgTransform = null//null//[25, 0, 248650, 0, -25, 5323275]//[30,0,-2361915,
 // Name of Output CSV file
 var outName = 'GEDI_Landsat_Fusion'
 // Name of Output Directory
-var outDir = "BDe2_Delta" //This must be created in Google Drive
+var outDir = "BDe2_Epsilon" //This must be created in Google Drive
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
