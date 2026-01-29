@@ -406,12 +406,14 @@ var addLatLon = function(img){
 
 // Get Final GEDI Product
 if(ee.Number(sensitivityThres).lte(0.95)){
+  print('Warning: Sensitivity Less than 0.95. Omitting Quality Mask Filter')
   var finalGedi_v2 = finalGedi_v2.map(solarElevMask)
   finalGedi_v2 = finalGedi_v2.map(sensitivityMask)
   finalGedi_v2 = finalGedi_v2.map(beamFilter)
   finalGedi_v2 = finalGedi_v2.map(addLatLon)
 // finalGedi_v2 = finalGedi_v2.map(addDateGEDI)
 } else {
+  print('Subseting GEDI Samples')
   var finalGedi_v2 = gediMaster.map(qualityMaskXX)
   finalGedi_v2 = finalGedi_v2.map(solarElevMask)
   finalGedi_v2 = finalGedi_v2.map(sensitivityMask)
