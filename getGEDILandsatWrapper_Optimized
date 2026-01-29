@@ -405,13 +405,20 @@ var addLatLon = function(img){
 };
 
 // Get Final GEDI Product
-
-var finalGedi_v2 = gediMaster.map(qualityMaskXX)
-finalGedi_v2 = finalGedi_v2.map(solarElevMask)
-finalGedi_v2 = finalGedi_v2.map(sensitivityMask)
-finalGedi_v2 = finalGedi_v2.map(beamFilter)
-finalGedi_v2 = finalGedi_v2.map(addLatLon)
+if(ee.Number(sensitivityThres).lte(0.95)){
+  var finalGedi_v2 = finalGedi_v2.map(solarElevMask)
+  finalGedi_v2 = finalGedi_v2.map(sensitivityMask)
+  finalGedi_v2 = finalGedi_v2.map(beamFilter)
+  finalGedi_v2 = finalGedi_v2.map(addLatLon)
 // finalGedi_v2 = finalGedi_v2.map(addDateGEDI)
+} else {
+  var finalGedi_v2 = gediMaster.map(qualityMaskXX)
+  finalGedi_v2 = finalGedi_v2.map(solarElevMask)
+  finalGedi_v2 = finalGedi_v2.map(sensitivityMask)
+  finalGedi_v2 = finalGedi_v2.map(beamFilter)
+  finalGedi_v2 = finalGedi_v2.map(addLatLon)
+}
+
 
 
 var roi = AOI.geometry().bounds(100,gediProj)
