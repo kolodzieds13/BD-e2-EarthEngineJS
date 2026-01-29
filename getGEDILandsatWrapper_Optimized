@@ -117,7 +117,7 @@ var imgTransform = null//null//[25, 0, 248650, 0, -25, 5323275]//[30,0,-2361915,
 // Name of Output CSV file
 var outName = 'GEDI_Landsat_Fusion'
 // Name of Output Directory
-var outDir = "BDe2_Zeta" //This must be created in Google Drive
+var outDir = "BDe2_Eta" //This must be created in Google Drive
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -407,7 +407,7 @@ var addLatLon = function(img){
 // Get Final GEDI Product
 if(ee.Number(sensitivityThres).lte(0.95)){
   print('Warning: Sensitivity Less than 0.95. Omitting Quality Mask Filter')
-  var finalGedi_v2 = finalGedi_v2.map(solarElevMask)
+  var finalGedi_v2 = gediMaster.map(solarElevMask)
   finalGedi_v2 = finalGedi_v2.map(sensitivityMask)
   finalGedi_v2 = finalGedi_v2.map(beamFilter)
   finalGedi_v2 = finalGedi_v2.map(addLatLon)
