@@ -245,7 +245,7 @@ var applyGLCMwetness = function(img){
     kernel: ee.Kernel.square({
     radius: 2.5, units: 'pixels', normalize: true})
   })
-  var glcm5_selected = glcm3.select(bandDictionary['glcmWetness5x5']); 
+  var glcm5_selected = glcm5.select(bandDictionary['glcmWetness5x5']); 
   return img.addBands([glcm3_selected,glcm5_selected])
 }
 
