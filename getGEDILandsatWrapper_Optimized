@@ -680,7 +680,7 @@ print("Landsat Band Names",lsPrep_wIndicies.first().bandNames())
 /////////////////////////////////////////////////////////////////
 
 if (addGLCMWetness){
-  lsPrep_wIndices = lsPrep_wIndicies.map(applyGLCMwetness)
+  lsPrep_wIndicies = lsPrep_wIndicies.map(applyGLCMwetness)
 }
 
 print("Landsat Band Names",lsPrep_wIndicies.first().bandNames())
