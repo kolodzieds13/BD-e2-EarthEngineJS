@@ -94,8 +94,8 @@ var endJulian = 365//365
 // Select Start and End Years
 // Note: GEDI Observation are avaliable from 2019 through 2023
 // Year 2023 only has data till March: endJulian no later than 91
-var startYear = 2021
-var endYear= 2021
+var startYear = 2019
+var endYear= 2019
 
 // Define Area of Interest (AOI)
 // This may need to be broken up if area is too large
@@ -195,7 +195,7 @@ var applyGLCMEVI = function(img){
   return img.addBands(glcm3_smooth)
 }
 
-var applyGLCMNIR = function(img){
+var applyGLCMnir = function(img){
   var glcmPrep = img.select('nir')
     .unitScale(0.05,0.55) // Statistical presets derived from GEDI samples across the study area.
     .multiply(255)
@@ -273,8 +273,8 @@ var bandDictionary = {
   "glcmDN":  ee.List(["EVI_contrast","EVI_var","EVI_svar","EVI_savg","EVI_dvar"]),
   "glcmOneThousand" : ee.List(["EVI_ent",]),
   
-  "glcmNIR":ee.List(['nir_ent','nir_cor']),
-  "glcmNIRDN":ee.List(['nir_ent','nir_cor']),
+  "glcmNIR":ee.List(['nir_ent','nir_corr']),
+  "glcmNIRDN":ee.List(['nir_ent','nir_corr']),
   
   
   "glcmSWIR1":ee.List(['swir1_contrast']),
@@ -669,7 +669,7 @@ print("Landsat Band Names",lsPrep_wIndicies.first().bandNames())
 
 
 if (addGLCMNIR){
-  lsPrep_wIndicies = lsPrep_wIndicies.map(applyGLCMNIR)
+  lsPrep_wIndicies = lsPrep_wIndicies.map(applyGLCMnir)
 }
 print("Landsat Band Names",lsPrep_wIndicies.first().bandNames())
 
@@ -680,7 +680,7 @@ print("Landsat Band Names",lsPrep_wIndicies.first().bandNames())
 /////////////////////////////////////////////////////////////////
 
 if (addGLCMWetness){
-  lsPrep_wIndices = lsPrep_wIndicies.map(applyGLCMWetness)
+  lsPrep_wIndices = lsPrep_wIndicies.map(applyGLCMwetness)
 }
 
 print("Landsat Band Names",lsPrep_wIndicies.first().bandNames())
