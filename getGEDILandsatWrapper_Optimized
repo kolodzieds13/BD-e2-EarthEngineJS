@@ -28,7 +28,7 @@ var dateToday = yearToday+monthToday+dayToday
 // Select GEDI sensitivity
 // Higher Sensity equals greater variability in agbd.
 // 0.95 is more commonly used to broad uses but it is generally prefered to used 0.98
-var sensitivityThres = 0.05//0.98
+var sensitivityThres = 0.98
 // Select Beam Type: Options are 'cover','power', or 'all'
 // Power beams are 'stronger' and results in more accurate measurement. However, power beams
 // may be limited and thus it may be better to include all observations 'all'
@@ -52,9 +52,11 @@ var addElevation = true
 // Can be important but will add significant processing time!
 var addGLCMEVI = false
 // This will apply a GLCM analysis variability against "NIR" for all Landsat Images.
-var addGLCMvarNIR = true
+var addGLCMNIR = true
 // This will apply a GLCM analysis contrast against "SWIR1" for all Landsat Images.
-var addGLCMconSWIR1 = true
+var addGLCMconSWIR1 = false
+// This will apply a GLCM analysis contrast against "SWIR1" for all Landsat Images.
+var addGLCMWetness = true
 // Desired LandsatBands
 // If True, GEDI observation will only record values of blue,green,red,nir,swir1,swir2,NDVI,and EVI
 // This is ideal to minimize GEE computations
@@ -117,7 +119,7 @@ var imgTransform = null//null//[25, 0, 248650, 0, -25, 5323275]//[30,0,-2361915,
 // Name of Output CSV file
 var outName = 'GEDI_Landsat_Fusion'
 // Name of Output Directory
-var outDir = "BDe2_Eta" //This must be created in Google Drive
+var outDir = "BDe2_Theta" //This must be created in Google Drive
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -171,9 +173,9 @@ var beamFilter = function(im){
 
 
 var applyGLCMEVI = function(img){
-  var boxcar = ee.Kernel.square({
-    radius: 2, units: 'pixels', normalize: true
-  });
+  // var boxcar = ee.Kernel.square({
+  //   radius: 2, units: 'pixels', normalize: true
+  // });
       
   var glcmPrep = img.select('EVI')
     .multiply(ee.Number(10000))
@@ -193,51 +195,61 @@ var applyGLCMEVI = function(img){
   return img.addBands(glcm3_smooth)
 }
 
-var applyGLCMvarNIR = function(img){
-  var boxcar = ee.Kernel.square({
-    radius: 2, units: 'pixels', normalize: true
-  });
-      
+var applyGLCMNIR = function(img){
   var glcmPrep = img.select('nir')
-    .multiply(ee.Number(10000))
-    .toInt16()
-    .unitScale(-10000,10000)
+    .unitScale(0.05,0.55) // Statistical presets derived from GEDI samples across the study area.
     .multiply(255)
     .toByte()
-    
-  // Kernel 7 x 7
-  var glcm3 = glcmPrep.glcmTexture({
-    size:2,
+  // Kernel 5 x 5
+  var glcm5 = glcmPrep.glcmTexture({
+    size: 2,
     kernel: ee.Kernel.square({
-    radius: 2, units: 'pixels', normalize: true})
+    radius: 2.5, units: 'pixels', normalize: true})
   })
-  
-  var glcm3_smooth = glcm3.convolve(boxcar).select(bandDictionary['glcmNIR']); 
-  return img.addBands(glcm3_smooth)
+  var glcm5_selected = glcm5.select(bandDictionary['glcmNIR']); 
+  return img.addBands(glcm5_selected)
 }
 
 var applyGLCMconSWIR1 = function(img){
-  var boxcar = ee.Kernel.square({
-    radius: 2, units: 'pixels', normalize: true
-  });
-      
   var glcmPrep = img.select('swir1')
-    .multiply(ee.Number(10000))
-    .toInt16()
-    .unitScale(-10000,10000)
+    // .multiply(ee.Number(10000))
+    // .toInt16()
+    .unitScale(0,1)
     .multiply(255)
     .toByte()
-    
   // Kernel 7 x 7
   var glcm3 = glcmPrep.glcmTexture({
     size:2,
     kernel: ee.Kernel.square({
     radius: 2, units: 'pixels', normalize: true})
   })
-  
-  var glcm3_smooth = glcm3.convolve(boxcar).select(bandDictionary['glcmSWIR1']); 
+  var glcm3_smooth = glcm3.select(bandDictionary['glcmSWIR1']); 
   return img.addBands(glcm3_smooth)
 }
+
+var applyGLCMwetness = function(img){
+  var glcmPrep = img.select('wetness')
+    .unitScale(-0.025,0.15) // Statistical presets derived from GEDI samples across the study area.
+    .multiply(255)
+    .toByte()
+  // Kernel 3 x 3
+  var glcm3 = glcmPrep.glcmTexture({
+    size:1,
+    kernel: ee.Kernel.square({
+    radius: 1.5, units: 'pixels', normalize: true})
+  })
+  var glcm3_selected = glcm3.select(bandDictionary['glcmWetness3x3']); 
+  // Kernel 5 x 5
+  var glcm5 = glcmPrep.glcmTexture({
+    size:2,
+    kernel: ee.Kernel.square({
+    radius: 2.5, units: 'pixels', normalize: true})
+  })
+  var glcm5_selected = glcm3.select(bandDictionary['glcmWetness5x5']); 
+  return img.addBands([glcm3_selected,glcm5_selected])
+}
+
+
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -250,7 +262,9 @@ var applyGLCMconSWIR1 = function(img){
 var bandDictionary = {
   "reflectanceAll":ee.List(["blue","green","red","nir","swir1","swir2","NDVI","NIRv","NBR","NDMI","EVI","SAVI","brightness",
                   "greenness","wetness","tcAngleBG","tcAngleGW","tcAngleBW","tcDistBG","tcDistGW","tcDistBW"]),
-  "reflectanceSimple":ee.List(["blue","green","red","nir","swir1","swir2","NDVI","EVI","NBR"]), // New add 20260112
+                  
+  "reflectanceSimple":ee.List(["blue","green","red","nir","swir1","swir2","NDVI","EVI","NBR","brightness",
+                  "greenness","wetness"]), // New add 20260131
   
   "glcm":ee.List(['EVI_asm','EVI_contrast','EVI_corr','EVI_var','EVI_idm','EVI_savg','EVI_svar',
                   'EVI_sent','EVI_ent','EVI_dvar','EVI_dent','EVI_imcorr1','EVI_imcorr2',]),
@@ -259,12 +273,18 @@ var bandDictionary = {
   "glcmDN":  ee.List(["EVI_contrast","EVI_var","EVI_svar","EVI_savg","EVI_dvar"]),
   "glcmOneThousand" : ee.List(["EVI_ent",]),
   
-  "glcmNIR":ee.List(['nir_var']),
-  "glcmNIRDN":ee.List(['nir_var']),
+  "glcmNIR":ee.List(['nir_ent','nir_cor']),
+  "glcmNIRDN":ee.List(['nir_ent','nir_cor']),
   
   
   "glcmSWIR1":ee.List(['swir1_contrast']),
   "glcmSWIR1DN":ee.List(['swir1_contrast']),
+  
+  "glcmWetness3x3":ee.List(['wetness_contrast','wetness_shade']),
+  "glcmWetness5x5":ee.List(['wetness_var']),
+  
+  "glcmWetnessDN":ee.List(['wetness_contrast','wetness_shade','wetness_var']),
+  
   
   "terrain100":ee.List(['slope','tpi11','tpi21','tpi41']),
   "terrain10k":ee.List(["sinAspect",'cosAspect','HLI']),
@@ -648,10 +668,23 @@ print("Landsat Band Names",lsPrep_wIndicies.first().bandNames())
 /////////////////////////////////////////////////////////////////
 
 
-if (addGLCMvarNIR){
-  lsPrep_wIndicies = lsPrep_wIndicies.map(applyGLCMvarNIR)
+if (addGLCMNIR){
+  lsPrep_wIndicies = lsPrep_wIndicies.map(applyGLCMNIR)
 }
 print("Landsat Band Names",lsPrep_wIndicies.first().bandNames())
+
+//////////////////////////////////////////////////////////////////
+//
+//             Add WEtness GLCM
+//
+/////////////////////////////////////////////////////////////////
+
+if (addGLCMWetness){
+  lsPrep_wIndices = lsPrep_wIndicies.map(applyGLCMWetness)
+}
+
+print("Landsat Band Names",lsPrep_wIndicies.first().bandNames())
+
 
 //////////////////////////////////////////////////////////////////
 //
@@ -1023,17 +1056,17 @@ var sampleBestLandsat = function(gediFeature) {
         gediMasterLS = gediMasterLS.addBands(glcmDNB,null,true)
       }  
       
-      if (addGLCMvarNIR){
-        print('Applying Scale Factor - GLCM NIR')
-        var glcmDNB = gediMasterLS.select(bandDictionary['glcmNIRDN']).int16()
-        gediMasterLS = gediMasterLS.addBands(glcmDNB,null,true)
-      }
+      // if (addGLCMvarNIR){
+      //   print('Applying Scale Factor - GLCM NIR')
+      //   var glcmDNB = gediMasterLS.select(bandDictionary['glcmNIRDN']).int16()
+      //   gediMasterLS = gediMasterLS.addBands(glcmDNB,null,true)
+      // }
       
-      if (addGLCMconSWIR1){
-        print('Applying Scale Factor - GLCM SWIR1')
-        var glcmDNB = gediMasterLS.select(bandDictionary['glcmSWIR1DN']).int16()
-        gediMasterLS = gediMasterLS.addBands(glcmDNB,null,true)
-      }  
+      // if (addGLCMconSWIR1){
+      //   print('Applying Scale Factor - GLCM SWIR1')
+      //   var glcmDNB = gediMasterLS.select(bandDictionary['glcmSWIR1DN']).int16()
+      //   gediMasterLS = gediMasterLS.addBands(glcmDNB,null,true)
+      // }  
       
       print(gediMasterLS.bandNames,"Final Band Names")        
       
