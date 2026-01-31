@@ -51,11 +51,11 @@ var addElevation = true
 // This will apply a GLCM analysis against "EVI" for all Landsat Images. 
 // Can be important but will add significant processing time!
 var addGLCMEVI = false
-// This will apply a GLCM analysis variability against "NIR" for all Landsat Images.
+// This will apply a GLCM analysis entropy and correlation against "NIR" for all Landsat Images.
 var addGLCMNIR = true
 // This will apply a GLCM analysis contrast against "SWIR1" for all Landsat Images.
 var addGLCMconSWIR1 = false
-// This will apply a GLCM analysis contrast against "SWIR1" for all Landsat Images.
+// This will apply a GLCM analysis contrast, shade, and variance against "TC Wetness" for all Landsat Images.
 var addGLCMWetness = true
 // Desired LandsatBands
 // If True, GEDI observation will only record values of blue,green,red,nir,swir1,swir2,NDVI,and EVI
