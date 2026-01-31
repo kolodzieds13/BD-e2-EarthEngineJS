@@ -119,7 +119,7 @@ var imgTransform = null//null//[25, 0, 248650, 0, -25, 5323275]//[30,0,-2361915,
 // Name of Output CSV file
 var outName = 'GEDI_Landsat_Fusion'
 // Name of Output Directory
-var outDir = "BDe2_Theta" //This must be created in Google Drive
+var outDir = "BDe2_Theta_v2" //This must be created in Google Drive
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -424,22 +424,29 @@ var addLatLon = function(img){
   return img.addBands(latLon);
 };
 
-// Get Final GEDI Product
-if(ee.Number(sensitivityThres).lte(0.95)){
-  print('Warning: Sensitivity Less than 0.95. Omitting Quality Mask Filter')
-  var finalGedi_v2 = gediMaster.map(solarElevMask)
-  finalGedi_v2 = finalGedi_v2.map(sensitivityMask)
-  finalGedi_v2 = finalGedi_v2.map(beamFilter)
-  finalGedi_v2 = finalGedi_v2.map(addLatLon)
-// finalGedi_v2 = finalGedi_v2.map(addDateGEDI)
-} else {
-  print('Subseting GEDI Samples')
-  var finalGedi_v2 = gediMaster.map(qualityMaskXX)
-  finalGedi_v2 = finalGedi_v2.map(solarElevMask)
-  finalGedi_v2 = finalGedi_v2.map(sensitivityMask)
-  finalGedi_v2 = finalGedi_v2.map(beamFilter)
-  finalGedi_v2 = finalGedi_v2.map(addLatLon)
-}
+var finalGedi_v2 = gediMaster.map(qualityMaskXX)
+finalGedi_v2 = finalGedi_v2.map(solarElevMask)
+finalGedi_v2 = finalGedi_v2.map(sensitivityMask)
+finalGedi_v2 = finalGedi_v2.map(beamFilter)
+finalGedi_v2 = finalGedi_v2.map(addLatLon)
+
+
+// // Get Final GEDI Product
+// if(ee.Number(sensitivityThres).lt(0.95)){
+//   print('Warning: Sensitivity Less than 0.95. Omitting Quality Mask Filter')
+//   var finalGedi_v2 = gediMaster.map(solarElevMask)
+//   finalGedi_v2 = finalGedi_v2.map(sensitivityMask)
+//   finalGedi_v2 = finalGedi_v2.map(beamFilter)
+//   finalGedi_v2 = finalGedi_v2.map(addLatLon)
+// // finalGedi_v2 = finalGedi_v2.map(addDateGEDI)
+// } else {
+//   print('Subseting GEDI Samples')
+//   var finalGedi_v2 = gediMaster.map(qualityMaskXX)
+//   finalGedi_v2 = finalGedi_v2.map(solarElevMask)
+//   finalGedi_v2 = finalGedi_v2.map(sensitivityMask)
+//   finalGedi_v2 = finalGedi_v2.map(beamFilter)
+//   finalGedi_v2 = finalGedi_v2.map(addLatLon)
+// }
 
 
 
