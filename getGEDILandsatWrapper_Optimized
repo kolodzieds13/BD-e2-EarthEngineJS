@@ -94,8 +94,8 @@ var endJulian = 365//365
 // Select Start and End Years
 // Note: GEDI Observation are avaliable from 2019 through 2023
 // Year 2023 only has data till March: endJulian no later than 91
-var startYear = 2019
-var endYear= 2019
+var startYear = 2021
+var endYear= 2021
 
 // Define Area of Interest (AOI)
 // This may need to be broken up if area is too large
