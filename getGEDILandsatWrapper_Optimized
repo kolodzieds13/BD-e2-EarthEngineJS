@@ -117,7 +117,7 @@ var imgTransform = null//null//[25, 0, 248650, 0, -25, 5323275]//[30,0,-2361915,
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Name of Output CSV file
-var outName = 'BDe2_dataTable'
+var outName = 'BDe2_DataTable'
 // Name of Output Directory
 var outDir = "BDe2_Iota" //This must be created in Google Drive
 
