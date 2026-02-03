@@ -94,8 +94,8 @@ var endJulian = 365//365
 // Select Start and End Years
 // Note: GEDI Observation are avaliable from 2019 through 2023
 // Year 2023 only has data till March: endJulian no later than 91
-var startYear = 2019
-var endYear= 2019
+var startYear = 2021
+var endYear= 2021
 
 // Define Area of Interest (AOI)
 // This may need to be broken up if area is too large
@@ -119,7 +119,7 @@ var imgTransform = null//null//[25, 0, 248650, 0, -25, 5323275]//[30,0,-2361915,
 // Name of Output CSV file
 var outName = 'BDe2_DataTable'
 // Name of Output Directory
-var outDir = "BDe2_Iota" //This must be created in Google Drive
+var outDir = "BDe2_Kappa" //This must be created in Google Drive
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -555,7 +555,7 @@ args.defringeL5 = true;
 args.applyCloudScore = true;
 args.applyFmaskCloudMask = true;
 
-args.applyTDOM = false//true;
+args.applyTDOM = true//true;
 args.applyFmaskCloudShadowMask = true;
 
 args.applyFmaskSnowMask = false//false;
