@@ -28,7 +28,8 @@ var dateToday = yearToday+monthToday+dayToday
 // Select GEDI sensitivity
 // Higher Sensity equals greater variability in agbd.
 // 0.95 is more commonly used to broad uses but it is generally prefered to used 0.98
-var sensitivityThres = 0.90
+// 0.95 is the minimum sensitivity when GEDI Quality Flags are applied. 
+var sensitivityThres = 0.98
 // Select Beam Type: Options are 'cover','power', or 'all'
 // Power beams are 'stronger' and results in more accurate measurement. However, power beams
 // may be limited and thus it may be better to include all observations 'all'
