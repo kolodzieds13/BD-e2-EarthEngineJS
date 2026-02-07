@@ -330,12 +330,12 @@ var bandDictionary = {
   "glcmDN":  ee.List(["EVI_contrast","EVI_var","EVI_svar","EVI_savg","EVI_dvar"]),
   "glcmOneThousand" : ee.List(["EVI_ent",]),
   
-  "glcmNIR":ee.List(['nir_ent','nir_corr']),
-  "glcmNIRDN":ee.List(['nir_ent','nir_corr']),
+  // "glcmNIR":ee.List(['nir_ent','nir_corr']),
+  // "glcmNIRDN":ee.List(['nir_ent','nir_corr']),
   
   
-  "glcmSWIR1":ee.List(['swir1_contrast','swir1_entropy','swir1_var']),
-  "glcmSWIR1DN":ee.List(['swir1_contrast','swir1_entropy','swir1_var']),
+  "glcmSWIR1":ee.List(['swir1_contrast','swir1_ent','swir1_var']),
+  "glcmSWIR1DN":ee.List(['swir1_contrast','swir1_ent','swir1_var']),
   
   // "glcmWetness3x3":ee.List(['wetness_contrast','wetness_shade']),
   "glcmWetness":ee.List(['wetness_var','wetness_contrast','wetness_idm']),
