@@ -199,7 +199,7 @@ var applyGLCMEVI = function(img){
 
 var applyGLCMnir = function(img){
   var glcmPrep = img.select('nir')//.multiply(10000).toInt16()
-    .unitScale(0.05,0.55) // Statistical presets derived from GEDI samples across the study area.
+    .unitScale(0.10,0.60) // Statistical presets derived from GEDI samples across the study area.
     .multiply(255)
     .round()
     .toByte()
@@ -270,7 +270,7 @@ var applyGLCMswir1 = function(img){
   var glcmPrep = img.select('swir1')//.multiply(10000).toInt16()
     // // .multiply(ee.Number(10000))
     // // .toInt16()
-    .unitScale(0.025,0.35)
+    .unitScale(0.02,0.35)
     .multiply(255)
     .round()
     .toByte()
