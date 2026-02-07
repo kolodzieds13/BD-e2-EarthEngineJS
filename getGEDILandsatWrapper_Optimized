@@ -95,8 +95,8 @@ var endJulian = 365//365
 // Select Start and End Years
 // Note: GEDI Observation are avaliable from 2019 through 2023
 // Year 2023 only has data till March: endJulian no later than 91
-var startYear = 2021
-var endYear= 2021
+var startYear = 2019
+var endYear= 2019
 
 // Define Area of Interest (AOI)
 // This may need to be broken up if area is too large
@@ -121,7 +121,7 @@ var imgTransform = null//null//[25, 0, 248650, 0, -25, 5323275]//[30,0,-2361915,
 // Name of Output CSV file
 var outName = 'BDe2_DataTable'
 // Name of Output Directory
-var outDir = "BDe2_Lambda" //This must be created in Google Drive
+var outDir = "BDe2_Mu" //This must be created in Google Drive
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -198,10 +198,11 @@ var applyGLCMEVI = function(img){
 }
 
 var applyGLCMnir = function(img){
-  var glcmPrep = img.select('nir').multiply(10000).toInt16()
-    // .unitScale(0.05,0.55) // Statistical presets derived from GEDI samples across the study area.
-    // .multiply(255)
-    // .toByte()
+  var glcmPrep = img.select('nir')//.multiply(10000).toInt16()
+    .unitScale(0.05,0.55) // Statistical presets derived from GEDI samples across the study area.
+    .multiply(255)
+    .round()
+    .toByte()
     
   // Kernel 3 x 3
   var glcm3 = glcmPrep.glcmTexture({
@@ -266,12 +267,13 @@ var applyGLCMnir = function(img){
 }
 
 var applyGLCMswir1 = function(img){
-  var glcmPrep = img.select('swir1').multiply(10000).toInt16()
+  var glcmPrep = img.select('swir1')//.multiply(10000).toInt16()
     // // .multiply(ee.Number(10000))
     // // .toInt16()
-    // .unitScale(0.005,1)
-    // .multiply(255)
-    // .toByte()
+    .unitScale(0.025,0.35)
+    .multiply(255)
+    .round()
+    .toByte()
   // Kernel 5 x 5
   var glcm5 = glcmPrep.glcmTexture({
     size:2,
@@ -284,10 +286,11 @@ var applyGLCMswir1 = function(img){
 }
 
 var applyGLCMwetness = function(img){
-  var glcmPrep = img.select('wetness').multiply(10000).toInt16()
-  //   .unitScale(-0.025,0.15) // Statistical presets derived from GEDI samples across the study area.
-  //   .multiply(255)
-  //   .toByte()
+  var glcmPrep = img.select('wetness')//.multiply(10000).toInt16()
+    .unitScale(-0.025,0.15) // Statistical presets derived from GEDI samples across the study area.
+    .multiply(255)
+    .round()
+    .toByte()
   // // Kernel 3 x 3
   // // var glcm3 = glcmPrep.glcmTexture({
   // //   size:1,
