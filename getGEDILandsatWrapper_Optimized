@@ -335,13 +335,13 @@ var bandDictionary = {
   // "glcmNIRDN":ee.List(['nir_ent','nir_corr']),
   
   
-  "glcmSWIR1":ee.List(['swir1_contrast','swir1_ent','swir1_var']),
-  "glcmSWIR1DN":ee.List(['swir1_contrast','swir1_ent','swir1_var']),
+  "glcmSWIR1":ee.List(['swir1_contrast','swir1_var','swir1_ent',]),
+  "glcmSWIR1DN":ee.List(['swir1_contrast','swir1_var','swir1_ent',]),
   
   // "glcmWetness3x3":ee.List(['wetness_contrast','wetness_shade']),
-  "glcmWetness":ee.List(['wetness_var','wetness_contrast','wetness_idm']),
+  "glcmWetness":ee.List(['wetness_contrast','wetness_var','wetness_idm']),
   
-  "glcmWetnessDN":ee.List(['wetness_var','wetness_contrast','wetness_idm']),
+  "glcmWetnessDN":ee.List(['wetness_contrast','wetness_var','wetness_idm']),
   
   
   "terrain100":ee.List(['slope','tpi11','tpi21','tpi41']),
