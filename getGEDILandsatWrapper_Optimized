@@ -279,7 +279,7 @@ var applyGLCMSWIR1 = function(img){
     average: true
   })
   var glcm5_selected = glcm5.select(bandDictionary['glcmSWIR1']); 
-  return img.addBands(glcm3_smooth)
+  return img.addBands(glcm5_selected)
 }
 
 var applyGLCMwetness = function(img){
@@ -288,20 +288,22 @@ var applyGLCMwetness = function(img){
     .multiply(255)
     .toByte()
   // Kernel 3 x 3
-  var glcm3 = glcmPrep.glcmTexture({
-    size:1,
-    kernel: ee.Kernel.square({
-    radius: 1.5, units: 'pixels', normalize: true})
-  })
-  var glcm3_selected = glcm3.select(bandDictionary['glcmWetness3x3']); 
+  // var glcm3 = glcmPrep.glcmTexture({
+  //   size:1,
+  //   // kernel: ee.Kernel.square({
+  //   // radius: 1.5, units: 'pixels', normalize: true})
+  //   average:true
+  // })
+  // var glcm3_selected = glcm3.select(bandDictionary['glcmWetness3x3']); 
   // Kernel 5 x 5
   var glcm5 = glcmPrep.glcmTexture({
     size:2,
-    kernel: ee.Kernel.square({
-    radius: 2.5, units: 'pixels', normalize: true})
+    // kernel: ee.Kernel.square({
+    // radius: 2.5, units: 'pixels', normalize: true})
+    average: true
   })
   var glcm5_selected = glcm5.select(bandDictionary['glcmWetness5x5']); 
-  return img.addBands([glcm3_selected,glcm5_selected])
+  return img.addBands([glcm5_selected])
 }
 
 
