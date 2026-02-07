@@ -19,6 +19,142 @@ var dayToday = new Date().toLocaleString("en-US",{timeZone:"America/Denver",day:
 
 var dateToday = yearToday+monthToday+dayToday
 
+
+///// NEW GLCM
+
+// ========================================
+// FINAL GLCM FEATURE SET
+// 14 Features - Optimized for PNW Biomass
+// NO SMOOTHING APPLIED
+// ========================================
+
+var nir = image.select('SR_B5');
+var swir1 = image.select('SR_B6');
+
+// TC Wetness calculation
+var wetness = image.expression(
+  '0.1511*B2 + 0.1973*B3 + 0.3283*B4 + 0.3407*B5 - 0.7117*B6 - 0.4559*B7',
+  {
+    'B2': image.select('SR_B2'),
+    'B3': image.select('SR_B3'),
+    'B4': image.select('SR_B4'),
+    'B5': image.select('SR_B5'),
+    'B6': image.select('SR_B6'),
+    'B7': image.select('SR_B7')
+  }
+).rename('wetness');
+
+// ==========================================
+// NIR TEXTURE (9 features)
+// ==========================================
+
+// Multi-scale entropy
+var glcm_nir_3x3 = nir.glcmTexture({size: 3, average: true});
+var glcm_nir_5x5 = nir.glcmTexture({size: 5, average: true});
+var glcm_nir_7x7 = nir.glcmTexture({size: 7, average: true});
+
+// Directional for anisotropy
+var glcm_nir_dir = nir.glcmTexture({size: 5, average: false});
+
+var nir_features = ee.Image.cat([
+  // Multi-scale entropy (3 features)
+  glcm_nir_3x3.select('SR_B5_ent').rename('NIR_entropy_3x3'),
+  glcm_nir_5x5.select('SR_B5_ent').rename('NIR_entropy_5x5'),
+  glcm_nir_7x7.select('SR_B5_ent').rename('NIR_entropy_7x7'),
+  
+  // Single-scale other metrics (2 features)
+  glcm_nir_5x5.select('SR_B5_idm').rename('NIR_homogeneity'),
+  glcm_nir_5x5.select('SR_B5_corr').rename('NIR_correlation'),
+  
+  // Absolute anisotropy (2 features)
+  glcm_nir_dir.select('SR_B5_contrast_-1_0')
+    .subtract(glcm_nir_dir.select('SR_B5_contrast_0_-1'))
+    .abs()
+    .rename('NIR_contrast_anisotropy'),
+  
+  glcm_nir_dir.select('SR_B5_ent_-1_0')
+    .subtract(glcm_nir_dir.select('SR_B5_ent_0_-1'))
+    .abs()
+    .rename('NIR_entropy_anisotropy'),
+  
+  // Normalized anisotropy (2 features)
+  glcm_nir_dir.select('SR_B5_contrast_-1_0')
+    .subtract(glcm_nir_dir.select('SR_B5_contrast_0_-1'))
+    .abs()
+    .divide(
+      glcm_nir_dir.select('SR_B5_contrast_-1_0')
+        .add(glcm_nir_dir.select('SR_B5_contrast_0_-1'))
+        .add(0.0001)
+    )
+    .rename('NIR_contrast_NAI'),
+  
+  glcm_nir_dir.select('SR_B5_ent_-1_0')
+    .subtract(glcm_nir_dir.select('SR_B5_ent_0_-1'))
+    .abs()
+    .divide(
+      glcm_nir_dir.select('SR_B5_ent_-1_0')
+        .add(glcm_nir_dir.select('SR_B5_ent_0_-1'))
+        .add(0.0001)
+    )
+    .rename('NIR_entropy_NAI')
+]);
+
+// ==========================================
+// SWIR1 TEXTURE (2 features)
+// ==========================================
+
+var glcm_swir1 = swir1.glcmTexture({size: 5, average: true});
+
+var swir1_features = ee.Image.cat([
+  glcm_swir1.select('SR_B6_ent').rename('SWIR1_entropy'),
+  glcm_swir1.select('SR_B6_var').rename('SWIR1_variance')
+]);
+
+// ==========================================
+// TC WETNESS TEXTURE (3 features)
+// ==========================================
+
+var glcm_wetness = wetness.glcmTexture({size: 5, average: true});
+
+var wetness_features = ee.Image.cat([
+  glcm_wetness.select('wetness_contrast').rename('Wetness_contrast'),
+  glcm_wetness.select('wetness_var').rename('Wetness_variance'),
+  glcm_wetness.select('wetness_idm').rename('Wetness_homogeneity')
+]);
+
+// ==========================================
+// COMBINE ALL FEATURES (14 total)
+// ==========================================
+
+var glcm_features_final = nir_features
+  .addBands(swir1_features)
+  .addBands(wetness_features);
+
+print('=== FINAL GLCM FEATURE SET ===');
+print('Features:', glcm_features_final.bandNames());
+print('Count:', glcm_features_final.bandNames().length());
+
+// Verify: Should output 14
+
+// ==========================================
+// EXPORT (NO SMOOTHING)
+// ==========================================
+
+Export.image.toDrive({
+  image: glcm_features_final,
+  description: 'PNW_GLCM_Features_Final_14',
+  folder: 'GEE_Biomass',
+  scale: 30,
+  region: study_area,
+  crs: 'EPSG:4326',
+  maxPixels: 1e13,
+  fileFormat: 'GeoTIFF'
+});
+
+print('Export configured - check Tasks tab');
+
+
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 //                GEDI Parameters
