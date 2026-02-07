@@ -197,10 +197,10 @@ var applyGLCMEVI = function(img){
 }
 
 var applyGLCMnir = function(img){
-  var glcmPrep = img.select('nir')
-    .unitScale(0.05,0.55) // Statistical presets derived from GEDI samples across the study area.
-    .multiply(255)
-    .toByte()
+  var glcmPrep = img.select('nir').multiply(10000).toInt16()
+    // .unitScale(0.05,0.55) // Statistical presets derived from GEDI samples across the study area.
+    // .multiply(255)
+    // .toByte()
     
   // Kernel 3 x 3
   var glcm3 = glcmPrep.glcmTexture({
@@ -264,13 +264,13 @@ var applyGLCMnir = function(img){
   return img.addBands([ent3,ent5,ent7,idm5,corr5,contrastAniso,contrastNAI,entropyAniso,entropyNAI])
 }
 
-var applyGLCMSWIR1 = function(img){
-  var glcmPrep = img.select('swir1')
-    // .multiply(ee.Number(10000))
-    // .toInt16()
-    .unitScale(0,1)
-    .multiply(255)
-    .toByte()
+var applyGLCMswir1 = function(img){
+  var glcmPrep = img.select('swir1').multiply(10000).toInt16()
+    // // .multiply(ee.Number(10000))
+    // // .toInt16()
+    // .unitScale(0.005,1)
+    // .multiply(255)
+    // .toByte()
   // Kernel 5 x 5
   var glcm5 = glcmPrep.glcmTexture({
     size:2,
@@ -283,26 +283,26 @@ var applyGLCMSWIR1 = function(img){
 }
 
 var applyGLCMwetness = function(img){
-  var glcmPrep = img.select('wetness')
-    .unitScale(-0.025,0.15) // Statistical presets derived from GEDI samples across the study area.
-    .multiply(255)
-    .toByte()
-  // Kernel 3 x 3
-  // var glcm3 = glcmPrep.glcmTexture({
-  //   size:1,
-  //   // kernel: ee.Kernel.square({
-  //   // radius: 1.5, units: 'pixels', normalize: true})
-  //   average:true
-  // })
-  // var glcm3_selected = glcm3.select(bandDictionary['glcmWetness3x3']); 
-  // Kernel 5 x 5
+  var glcmPrep = img.select('wetness').multiply(10000).toInt16()
+  //   .unitScale(-0.025,0.15) // Statistical presets derived from GEDI samples across the study area.
+  //   .multiply(255)
+  //   .toByte()
+  // // Kernel 3 x 3
+  // // var glcm3 = glcmPrep.glcmTexture({
+  // //   size:1,
+  // //   // kernel: ee.Kernel.square({
+  // //   // radius: 1.5, units: 'pixels', normalize: true})
+  // //   average:true
+  // // })
+  // // var glcm3_selected = glcm3.select(bandDictionary['glcmWetness3x3']); 
+  // // Kernel 5 x 5
   var glcm5 = glcmPrep.glcmTexture({
     size:2,
     // kernel: ee.Kernel.square({
     // radius: 2.5, units: 'pixels', normalize: true})
     average: true
   })
-  var glcm5_selected = glcm5.select(bandDictionary['glcmWetness5x5']); 
+  var glcm5_selected = glcm5.select(bandDictionary['glcmWetness']); 
   return img.addBands([glcm5_selected])
 }
 
@@ -334,13 +334,13 @@ var bandDictionary = {
   "glcmNIRDN":ee.List(['nir_ent','nir_corr']),
   
   
-  "glcmSWIR1":ee.List(['swir1_contrast','swir1_entropy','swir1_variance']),
-  "glcmSWIR1DN":ee.List(['swir1_contrast','swir1_entropy','swir1_variance']),
+  "glcmSWIR1":ee.List(['swir1_contrast','swir1_entropy','swir1_var']),
+  "glcmSWIR1DN":ee.List(['swir1_contrast','swir1_entropy','swir1_var']),
   
-  "glcmWetness3x3":ee.List(['wetness_contrast','wetness_shade']),
-  "glcmWetness5x5":ee.List(['wetness_var']),
+  // "glcmWetness3x3":ee.List(['wetness_contrast','wetness_shade']),
+  "glcmWetness":ee.List(['wetness_var','wetness_contrast','wetness_idm']),
   
-  "glcmWetnessDN":ee.List(['wetness_contrast','wetness_shade','wetness_var']),
+  "glcmWetnessDN":ee.List(['wetness_var','wetness_contrast','wetness_idm']),
   
   
   "terrain100":ee.List(['slope','tpi11','tpi21','tpi41']),
@@ -757,8 +757,8 @@ print("Landsat Band Names",lsPrep_wIndicies.first().bandNames())
 /////////////////////////////////////////////////////////////////
 
 
-if (addGLCMconSWIR1){
-  lsPrep_wIndicies = lsPrep_wIndicies.map(applyGLCMconSWIR1)
+if (addGLCMSWIR1){
+  lsPrep_wIndicies = lsPrep_wIndicies.map(applyGLCMswir1)
 }
 print("Landsat Band Names",lsPrep_wIndicies.first().bandNames())
 
