@@ -103,6 +103,7 @@ var endYear= 2019
 var AOI = studyArea//Kenobi_TileSchema_v5.filter(ee.Filter.eq('zoneID',IDs)) //comeback
 
 // Select Projection
+// Leave as 'null' for GEE to use the 'first' image projection within the study area. This is unusually a UTM.
 var imgCRS = null //5070 / 32610
 // Select Scale: Desired resolution of data.
 var imgScale = null
@@ -120,7 +121,7 @@ var imgTransform = null//null//[25, 0, 248650, 0, -25, 5323275]//[30,0,-2361915,
 // Name of Output CSV file
 var outName = 'BDe2_DataTable'
 // Name of Output Directory
-var outDir = "BDe2_Kappa" //This must be created in Google Drive
+var outDir = "BDe2_Lambda" //This must be created in Google Drive
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
