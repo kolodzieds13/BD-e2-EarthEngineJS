@@ -227,7 +227,7 @@ var applyGLCMnir = function(img){
   
   // Kernel 7 x 7
   var glcm5_dir = glcmPrep.glcmTexture({
-    size: 5,
+    size: 2,
     average: false
   })
   
@@ -735,8 +735,8 @@ print("Landsat Band Names",lsPrep_wIndicies.first().bandNames())
 
 if (addGLCMNIR){
   lsPrep_wIndicies = lsPrep_wIndicies.map(applyGLCMnir)
+  print('Applying NIR GLCM: 3x3, 5x5, 7x7, 5x5 Anisotropy')
 }
-print("Landsat Band Names",lsPrep_wIndicies.first().bandNames())
 
 //////////////////////////////////////////////////////////////////
 //
@@ -746,10 +746,8 @@ print("Landsat Band Names",lsPrep_wIndicies.first().bandNames())
 
 if (addGLCMWetness){
   lsPrep_wIndicies = lsPrep_wIndicies.map(applyGLCMwetness)
+  print('Applying Wetness GLCM: 5x5')
 }
-
-print("Landsat Band Names",lsPrep_wIndicies.first().bandNames())
-
 
 //////////////////////////////////////////////////////////////////
 //
@@ -760,8 +758,8 @@ print("Landsat Band Names",lsPrep_wIndicies.first().bandNames())
 
 if (addGLCMSWIR1){
   lsPrep_wIndicies = lsPrep_wIndicies.map(applyGLCMswir1)
+  print('Applying SWIR1 GLCM: 5x5')
 }
-print("Landsat Band Names",lsPrep_wIndicies.first().bandNames())
 
 // Add Date to Landsat
 
