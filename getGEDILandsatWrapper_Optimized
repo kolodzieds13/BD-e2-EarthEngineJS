@@ -59,7 +59,7 @@ var addGLCMSWIR1 = true
 // This will apply a GLCM analysis contrast, shade, and variance against "TC Wetness" for all Landsat Images.
 var addGLCMWetness = true
 
-var addGaborNIRFilter = true
+var addGaborNIR = true
 
 
 // Desired LandsatBands
@@ -314,6 +314,120 @@ var applyGLCMwetness = function(img){
   return img.addBands([glcm5_selected])
 }
 
+
+// ========================================
+// GABOR FILTER IMPLEMENTATION
+// ========================================
+
+// Function to create Gabor kernel
+var createGaborKernel = function(wavelength, orientation, sigma, gamma, psi) {
+  /**
+   * Create a Gabor filter kernel
+   * wavelength: wavelength in pixels (controls frequency)
+   * orientation: angle in degrees (0, 45, 90, 135)
+   * sigma: Gaussian envelope width (typically wavelength/2)
+   * gamma: spatial aspect ratio (0.5 = elongated, 1.0 = circular)
+   * psi: phase offset (0 or Math.PI/2)
+   */
+  
+  var theta = orientation * Math.PI / 180;  // Convert to radians
+  var sigma_x = sigma;
+  var sigma_y = sigma / gamma;
+  
+  // Kernel size (5 sigma)
+  var kernel_size = Math.ceil(sigma * 5);
+  if (kernel_size % 2 === 0) kernel_size += 1;  // Must be odd
+  
+  var half = Math.floor(kernel_size / 2);
+  
+  // Create kernel matrix
+  var kernel_list = [];
+  
+  for (var y = -half; y <= half; y++) {
+    var row = [];
+    for (var x = -half; x <= half; x++) {
+      // Rotate coordinates
+      var x_theta = x * Math.cos(theta) + y * Math.sin(theta);
+      var y_theta = -x * Math.sin(theta) + y * Math.cos(theta);
+      
+      // Gaussian envelope
+      var gaussian = Math.exp(
+        -(x_theta * x_theta / (2 * sigma_x * sigma_x) + 
+          y_theta * y_theta / (2 * sigma_y * sigma_y))
+      );
+      
+      // Sinusoidal component
+      var sinusoid = Math.cos(2 * Math.PI * x_theta / wavelength + psi);
+      
+      // Gabor function
+      var gabor_val = gaussian * sinusoid;
+      
+      row.push(gabor_val);
+    }
+    kernel_list.push(row);
+  }
+  
+  return ee.Kernel.fixed(kernel_size, kernel_size, kernel_list, -half, -half, true);
+};
+
+// ========================================
+// GABOR PARAMETERS FOR PNW FORESTS
+// ========================================
+
+// // Wavelengths (scales) - in pixels at 30m resolution
+// var wavelengths = [3, 5, 9];  // 90m, 150m, 270m
+// // - 3 pixels (90m): Individual tree crowns / fine texture
+// // - 5 pixels (150m): Stand-level patterns / medium texture
+// // - 9 pixels (270m): Landscape-level / coarse texture
+
+// // Orientations (directions)
+// var orientations = [0, 45, 90, 135];  // degrees
+// // - 0°: East-West patterns (horizontal)
+// // - 45°: Northeast-Southwest diagonal
+// // - 90°: North-South patterns (vertical) - PNW ridges!
+// // - 135°: Northwest-Southeast diagonal
+
+// // Other parameters
+// var gamma = 0.5;     // Spatial aspect ratio (elongated)
+// var psi = 0;         // Phase offset (symmetric)
+
+var applyGaborNIRTexture = function(img) {
+  var nir = img.select('nir');
+  
+  var wavelengths = [3, 5, 9];
+  var orientations = [0, 45, 90, 135];
+  var gamma = 0.5;
+  var psi = 0;
+  
+  var gabor_bands = [];
+  
+  wavelengths.forEach(function(wavelength) {
+    var sigma = wavelength / 2;
+    var responses_this_wavelength = [];
+    
+    orientations.forEach(function(orientation) {
+      var gabor_kernel = createGaborKernel(wavelength, orientation, sigma, gamma, psi);
+      var gabor_response = nir.convolve(gabor_kernel)
+        .rename('Gabor_lambda' + wavelength + '_theta' + orientation);
+      
+      responses_this_wavelength.push(gabor_response);
+      gabor_bands.push(gabor_response);
+    });
+    
+    // Energy
+    var energy = ee.ImageCollection(responses_this_wavelength)
+      .map(function(img) { return img.pow(2); })
+      .sum()
+      .sqrt()
+      .rename('Gabor_energy_lambda' + wavelength);
+    
+    gabor_bands.push(energy);
+  });
+  
+  var gabor_image = ee.Image.cat(gabor_bands);
+  
+  return image.addBands(gabor_image);
+};
 
 
 
@@ -768,10 +882,17 @@ if (addGLCMSWIR1){
   print('Applying SWIR1 GLCM: 5x5')
 }
 
-// Add Date to Landsat
 
-// lsPrep_wIndicies = lsPrep_wIndicies.map(addLSDate)
+//////////////////////////////////////////////////////////////////
+//
+//             Add NIR Gabor
+//
+/////////////////////////////////////////////////////////////////
 
+if (addGaborNIR){
+  lsPrep_wIndicies = lsPrep_wIndicies.map(applyGaborNIRTexture)
+  print('Applying NIR Gabor Texture')
+}
 
 
 var addLSMetadata = function(img){
