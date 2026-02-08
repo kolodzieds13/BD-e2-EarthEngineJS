@@ -373,7 +373,7 @@ var createGaborKernel = function(wavelength, orientation, sigma, gamma, psi) {
 
 var applyGaborNIRTexture = function(img) {
   
-  var nir = img.select('B5');
+  var nir = img.select('nir');
   var nir_scaled = nir.unitScale(0.10, 0.65).multiply(255).round().toByte();
   
   var gamma = 0.5;
