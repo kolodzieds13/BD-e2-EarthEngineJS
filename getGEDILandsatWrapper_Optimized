@@ -371,10 +371,6 @@ var createGaborKernel = function(wavelength, orientation, sigma, gamma, psi) {
 };
 
 
-
-print('Kernels pre-computed:', Object.keys(KERNELS).length);
-
-
 var applyGaborNIRTexture = function(img) {
   
   var nir = img.select('nir');
@@ -1003,6 +999,9 @@ if (addGLCMSWIR1){
 /////////////////////////////////////////////////////////////////
 
 if (addGaborNIR){
+  print('Applying NIR Gabor Texture')
+  var gamma = 0.5;
+  var psi = 0;
   
     // Create kernels ONCE, before .map()
   var KERNELS = {
@@ -1022,9 +1021,11 @@ if (addGaborNIR){
     k_9_135: createGaborKernel(9, 135, 4.5, gamma, psi)
   };
 
+  print('Kernels pre-computed:', Object.keys(KERNELS).length);
+
   
   lsPrep_wIndicies = lsPrep_wIndicies.map(applyGaborNIRTexture)
-  print('Applying NIR Gabor Texture')
+  
 }
 
 //////////////////////////////////////////////////////////////////
