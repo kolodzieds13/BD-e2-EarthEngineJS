@@ -99,8 +99,8 @@ var endJulian = 365//365
 // Select Start and End Years
 // Note: GEDI Observation are avaliable from 2019 through 2023
 // Year 2023 only has data till March: endJulian no later than 91
-var startYear = 2021
-var endYear= 2021
+var startYear = 2020
+var endYear= 2020
 
 // Define Area of Interest (AOI)
 // This may need to be broken up if area is too large
@@ -412,7 +412,8 @@ var applyGaborNIRTexture = function(img) {
     orientations.forEach(function(orientation) {
       var gabor_kernel = createGaborKernel(wavelength, orientation, sigma, gamma, psi);
       var gabor_response = nir.convolve(gabor_kernel)
-        .rename('Gabor_lambda' + wavelength + '_theta' + orientation);
+        .rename('Gabor_lambda' + wavelength + '_theta' + orientation)
+        .toFloat();
       
       responses_this_wavelength.push(gabor_response);
       gabor_bands.push(gabor_response);
