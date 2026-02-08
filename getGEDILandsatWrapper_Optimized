@@ -99,8 +99,8 @@ var endJulian = 365//365
 // Select Start and End Years
 // Note: GEDI Observation are avaliable from 2019 through 2023
 // Year 2023 only has data till March: endJulian no later than 91
-var startYear = 2019
-var endYear= 2019
+var startYear = 2021
+var endYear= 2021
 
 // Define Area of Interest (AOI)
 // This may need to be broken up if area is too large
@@ -371,28 +371,20 @@ var createGaborKernel = function(wavelength, orientation, sigma, gamma, psi) {
 };
 
 
+
+print('Kernels pre-computed:', Object.keys(KERNELS).length);
+
+
 var applyGaborNIRTexture = function(img) {
   
   var nir = img.select('nir');
   var nir_scaled = nir.unitScale(0.10, 0.65).multiply(255).round().toByte();
   
-  var gamma = 0.5;
-  var psi = 0;
-  
-  // ========================================
-  // Explicitly create each Gabor band
-  // ========================================
-  
-  // Wavelength 3, all orientations
-  var k_3_0 = createGaborKernel(3, 0, 1.5, gamma, psi);
-  var k_3_45 = createGaborKernel(3, 45, 1.5, gamma, psi);
-  var k_3_90 = createGaborKernel(3, 90, 1.5, gamma, psi);
-  var k_3_135 = createGaborKernel(3, 135, 1.5, gamma, psi);
-  
-  var g_3_0 = nir_scaled.convolve(k_3_0).rename('Gabor_lambda3_theta0');
-  var g_3_45 = nir_scaled.convolve(k_3_45).rename('Gabor_lambda3_theta45');
-  var g_3_90 = nir_scaled.convolve(k_3_90).rename('Gabor_lambda3_theta90');
-  var g_3_135 = nir_scaled.convolve(k_3_135).rename('Gabor_lambda3_theta135');
+  // Use pre-computed kernels (no recreation!)
+  var g_3_0 = nir_scaled.convolve(KERNELS.k_3_0).rename('Gabor_lambda3_theta0');
+  var g_3_45 = nir_scaled.convolve(KERNELS.k_3_45).rename('Gabor_lambda3_theta45');
+  var g_3_90 = nir_scaled.convolve(KERNELS.k_3_90).rename('Gabor_lambda3_theta90');
+  var g_3_135 = nir_scaled.convolve(KERNELS.k_3_135).rename('Gabor_lambda3_theta135');
   
   var energy_3 = g_3_0.pow(2)
     .add(g_3_45.pow(2))
@@ -401,16 +393,10 @@ var applyGaborNIRTexture = function(img) {
     .sqrt()
     .rename('Gabor_energy_lambda3');
   
-  // Wavelength 5, all orientations
-  var k_5_0 = createGaborKernel(5, 0, 2.5, gamma, psi);
-  var k_5_45 = createGaborKernel(5, 45, 2.5, gamma, psi);
-  var k_5_90 = createGaborKernel(5, 90, 2.5, gamma, psi);
-  var k_5_135 = createGaborKernel(5, 135, 2.5, gamma, psi);
-  
-  var g_5_0 = nir_scaled.convolve(k_5_0).rename('Gabor_lambda5_theta0');
-  var g_5_45 = nir_scaled.convolve(k_5_45).rename('Gabor_lambda5_theta45');
-  var g_5_90 = nir_scaled.convolve(k_5_90).rename('Gabor_lambda5_theta90');
-  var g_5_135 = nir_scaled.convolve(k_5_135).rename('Gabor_lambda5_theta135');
+  var g_5_0 = nir_scaled.convolve(KERNELS.k_5_0).rename('Gabor_lambda5_theta0');
+  var g_5_45 = nir_scaled.convolve(KERNELS.k_5_45).rename('Gabor_lambda5_theta45');
+  var g_5_90 = nir_scaled.convolve(KERNELS.k_5_90).rename('Gabor_lambda5_theta90');
+  var g_5_135 = nir_scaled.convolve(KERNELS.k_5_135).rename('Gabor_lambda5_theta135');
   
   var energy_5 = g_5_0.pow(2)
     .add(g_5_45.pow(2))
@@ -419,16 +405,10 @@ var applyGaborNIRTexture = function(img) {
     .sqrt()
     .rename('Gabor_energy_lambda5');
   
-  // Wavelength 9, all orientations
-  var k_9_0 = createGaborKernel(9, 0, 4.5, gamma, psi);
-  var k_9_45 = createGaborKernel(9, 45, 4.5, gamma, psi);
-  var k_9_90 = createGaborKernel(9, 90, 4.5, gamma, psi);
-  var k_9_135 = createGaborKernel(9, 135, 4.5, gamma, psi);
-  
-  var g_9_0 = nir_scaled.convolve(k_9_0).rename('Gabor_lambda9_theta0');
-  var g_9_45 = nir_scaled.convolve(k_9_45).rename('Gabor_lambda9_theta45');
-  var g_9_90 = nir_scaled.convolve(k_9_90).rename('Gabor_lambda9_theta90');
-  var g_9_135 = nir_scaled.convolve(k_9_135).rename('Gabor_lambda9_theta135');
+  var g_9_0 = nir_scaled.convolve(KERNELS.k_9_0).rename('Gabor_lambda9_theta0');
+  var g_9_45 = nir_scaled.convolve(KERNELS.k_9_45).rename('Gabor_lambda9_theta45');
+  var g_9_90 = nir_scaled.convolve(KERNELS.k_9_90).rename('Gabor_lambda9_theta90');
+  var g_9_135 = nir_scaled.convolve(KERNELS.k_9_135).rename('Gabor_lambda9_theta135');
   
   var energy_9 = g_9_0.pow(2)
     .add(g_9_45.pow(2))
@@ -437,22 +417,106 @@ var applyGaborNIRTexture = function(img) {
     .sqrt()
     .rename('Gabor_energy_lambda9');
   
-  // ========================================
-  // Combine all Gabor bands explicitly
-  // ========================================
-  
   var gabor_all = ee.Image.cat([
-    // Wavelength 3
     g_3_0, g_3_45, g_3_90, g_3_135, energy_3,
-    // Wavelength 5
     g_5_0, g_5_45, g_5_90, g_5_135, energy_5,
-    // Wavelength 9
     g_9_0, g_9_45, g_9_90, g_9_135, energy_9
   ]);
   
-  // Add to original image
   return img.addBands(gabor_all);
 };
+
+
+
+
+
+
+
+
+
+
+// var applyGaborNIRTexture = function(img) {
+  
+//   var nir = img.select('nir');
+//   var nir_scaled = nir.unitScale(0.10, 0.65).multiply(255).round().toByte();
+  
+//   var gamma = 0.5;
+//   var psi = 0;
+  
+//   // ========================================
+//   // Explicitly create each Gabor band
+//   // ========================================
+  
+//   // Wavelength 3, all orientations
+//   var k_3_0 = createGaborKernel(3, 0, 1.5, gamma, psi);
+//   var k_3_45 = createGaborKernel(3, 45, 1.5, gamma, psi);
+//   var k_3_90 = createGaborKernel(3, 90, 1.5, gamma, psi);
+//   var k_3_135 = createGaborKernel(3, 135, 1.5, gamma, psi);
+  
+//   var g_3_0 = nir_scaled.convolve(k_3_0).rename('Gabor_lambda3_theta0');
+//   var g_3_45 = nir_scaled.convolve(k_3_45).rename('Gabor_lambda3_theta45');
+//   var g_3_90 = nir_scaled.convolve(k_3_90).rename('Gabor_lambda3_theta90');
+//   var g_3_135 = nir_scaled.convolve(k_3_135).rename('Gabor_lambda3_theta135');
+  
+//   var energy_3 = g_3_0.pow(2)
+//     .add(g_3_45.pow(2))
+//     .add(g_3_90.pow(2))
+//     .add(g_3_135.pow(2))
+//     .sqrt()
+//     .rename('Gabor_energy_lambda3');
+  
+//   // Wavelength 5, all orientations
+//   var k_5_0 = createGaborKernel(5, 0, 2.5, gamma, psi);
+//   var k_5_45 = createGaborKernel(5, 45, 2.5, gamma, psi);
+//   var k_5_90 = createGaborKernel(5, 90, 2.5, gamma, psi);
+//   var k_5_135 = createGaborKernel(5, 135, 2.5, gamma, psi);
+  
+//   var g_5_0 = nir_scaled.convolve(k_5_0).rename('Gabor_lambda5_theta0');
+//   var g_5_45 = nir_scaled.convolve(k_5_45).rename('Gabor_lambda5_theta45');
+//   var g_5_90 = nir_scaled.convolve(k_5_90).rename('Gabor_lambda5_theta90');
+//   var g_5_135 = nir_scaled.convolve(k_5_135).rename('Gabor_lambda5_theta135');
+  
+//   var energy_5 = g_5_0.pow(2)
+//     .add(g_5_45.pow(2))
+//     .add(g_5_90.pow(2))
+//     .add(g_5_135.pow(2))
+//     .sqrt()
+//     .rename('Gabor_energy_lambda5');
+  
+//   // Wavelength 9, all orientations
+//   var k_9_0 = createGaborKernel(9, 0, 4.5, gamma, psi);
+//   var k_9_45 = createGaborKernel(9, 45, 4.5, gamma, psi);
+//   var k_9_90 = createGaborKernel(9, 90, 4.5, gamma, psi);
+//   var k_9_135 = createGaborKernel(9, 135, 4.5, gamma, psi);
+  
+//   var g_9_0 = nir_scaled.convolve(k_9_0).rename('Gabor_lambda9_theta0');
+//   var g_9_45 = nir_scaled.convolve(k_9_45).rename('Gabor_lambda9_theta45');
+//   var g_9_90 = nir_scaled.convolve(k_9_90).rename('Gabor_lambda9_theta90');
+//   var g_9_135 = nir_scaled.convolve(k_9_135).rename('Gabor_lambda9_theta135');
+  
+//   var energy_9 = g_9_0.pow(2)
+//     .add(g_9_45.pow(2))
+//     .add(g_9_90.pow(2))
+//     .add(g_9_135.pow(2))
+//     .sqrt()
+//     .rename('Gabor_energy_lambda9');
+  
+//   // ========================================
+//   // Combine all Gabor bands explicitly
+//   // ========================================
+  
+//   var gabor_all = ee.Image.cat([
+//     // Wavelength 3
+//     g_3_0, g_3_45, g_3_90, g_3_135, energy_3,
+//     // Wavelength 5
+//     g_5_0, g_5_45, g_5_90, g_5_135, energy_5,
+//     // Wavelength 9
+//     g_9_0, g_9_45, g_9_90, g_9_135, energy_9
+//   ]);
+  
+//   // Add to original image
+//   return img.addBands(gabor_all);
+// };
 
 
 // ========================================
@@ -939,6 +1003,26 @@ if (addGLCMSWIR1){
 /////////////////////////////////////////////////////////////////
 
 if (addGaborNIR){
+  
+    // Create kernels ONCE, before .map()
+  var KERNELS = {
+    k_3_0: createGaborKernel(3, 0, 1.5, gamma, psi),
+    k_3_45: createGaborKernel(3, 45, 1.5, gamma, psi),
+    k_3_90: createGaborKernel(3, 90, 1.5, gamma, psi),
+    k_3_135: createGaborKernel(3, 135, 1.5, gamma, psi),
+    
+    k_5_0: createGaborKernel(5, 0, 2.5, gamma, psi),
+    k_5_45: createGaborKernel(5, 45, 2.5, gamma, psi),
+    k_5_90: createGaborKernel(5, 90, 2.5, gamma, psi),
+    k_5_135: createGaborKernel(5, 135, 2.5, gamma, psi),
+    
+    k_9_0: createGaborKernel(9, 0, 4.5, gamma, psi),
+    k_9_45: createGaborKernel(9, 45, 4.5, gamma, psi),
+    k_9_90: createGaborKernel(9, 90, 4.5, gamma, psi),
+    k_9_135: createGaborKernel(9, 135, 4.5, gamma, psi)
+  };
+
+  
   lsPrep_wIndicies = lsPrep_wIndicies.map(applyGaborNIRTexture)
   print('Applying NIR Gabor Texture')
 }
