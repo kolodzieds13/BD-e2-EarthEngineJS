@@ -414,13 +414,14 @@ var applyGaborNIRTexture = function(img) {
       var gabor_response = nir.convolve(gabor_kernel)
         .rename('Gabor_lambda' + wavelength + '_theta' + orientation)
         .toFloat();
+        
       
       responses_this_wavelength.push(gabor_response);
       gabor_bands.push(gabor_response);
     });
     
     // Energy
-    var energy = ee.ImageCollection(responses_this_wavelength)
+    var energy = ee.ImageCollection.fromImages(responses_this_wavelength)
       .map(function(img) { return img.pow(2); })
       .sum()
       .sqrt()
