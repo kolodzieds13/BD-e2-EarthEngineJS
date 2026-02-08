@@ -370,6 +370,91 @@ var createGaborKernel = function(wavelength, orientation, sigma, gamma, psi) {
   return ee.Kernel.fixed(kernel_size, kernel_size, kernel_list, -half, -half, true);
 };
 
+
+var applyGaborNIRTexture = function(img) {
+  
+  var nir = img.select('B5');
+  var nir_scaled = nir.unitScale(0.10, 0.65).multiply(255).toUint8();
+  
+  var gamma = 0.5;
+  var psi = 0;
+  
+  // ========================================
+  // Explicitly create each Gabor band
+  // ========================================
+  
+  // Wavelength 3, all orientations
+  var k_3_0 = createGaborKernel(3, 0, 1.5, gamma, psi);
+  var k_3_45 = createGaborKernel(3, 45, 1.5, gamma, psi);
+  var k_3_90 = createGaborKernel(3, 90, 1.5, gamma, psi);
+  var k_3_135 = createGaborKernel(3, 135, 1.5, gamma, psi);
+  
+  var g_3_0 = nir_scaled.convolve(k_3_0).rename('Gabor_lambda3_theta0');
+  var g_3_45 = nir_scaled.convolve(k_3_45).rename('Gabor_lambda3_theta45');
+  var g_3_90 = nir_scaled.convolve(k_3_90).rename('Gabor_lambda3_theta90');
+  var g_3_135 = nir_scaled.convolve(k_3_135).rename('Gabor_lambda3_theta135');
+  
+  var energy_3 = g_3_0.pow(2)
+    .add(g_3_45.pow(2))
+    .add(g_3_90.pow(2))
+    .add(g_3_135.pow(2))
+    .sqrt()
+    .rename('Gabor_energy_lambda3');
+  
+  // Wavelength 5, all orientations
+  var k_5_0 = createGaborKernel(5, 0, 2.5, gamma, psi);
+  var k_5_45 = createGaborKernel(5, 45, 2.5, gamma, psi);
+  var k_5_90 = createGaborKernel(5, 90, 2.5, gamma, psi);
+  var k_5_135 = createGaborKernel(5, 135, 2.5, gamma, psi);
+  
+  var g_5_0 = nir_scaled.convolve(k_5_0).rename('Gabor_lambda5_theta0');
+  var g_5_45 = nir_scaled.convolve(k_5_45).rename('Gabor_lambda5_theta45');
+  var g_5_90 = nir_scaled.convolve(k_5_90).rename('Gabor_lambda5_theta90');
+  var g_5_135 = nir_scaled.convolve(k_5_135).rename('Gabor_lambda5_theta135');
+  
+  var energy_5 = g_5_0.pow(2)
+    .add(g_5_45.pow(2))
+    .add(g_5_90.pow(2))
+    .add(g_5_135.pow(2))
+    .sqrt()
+    .rename('Gabor_energy_lambda5');
+  
+  // Wavelength 9, all orientations
+  var k_9_0 = createGaborKernel(9, 0, 4.5, gamma, psi);
+  var k_9_45 = createGaborKernel(9, 45, 4.5, gamma, psi);
+  var k_9_90 = createGaborKernel(9, 90, 4.5, gamma, psi);
+  var k_9_135 = createGaborKernel(9, 135, 4.5, gamma, psi);
+  
+  var g_9_0 = nir_scaled.convolve(k_9_0).rename('Gabor_lambda9_theta0');
+  var g_9_45 = nir_scaled.convolve(k_9_45).rename('Gabor_lambda9_theta45');
+  var g_9_90 = nir_scaled.convolve(k_9_90).rename('Gabor_lambda9_theta90');
+  var g_9_135 = nir_scaled.convolve(k_9_135).rename('Gabor_lambda9_theta135');
+  
+  var energy_9 = g_9_0.pow(2)
+    .add(g_9_45.pow(2))
+    .add(g_9_90.pow(2))
+    .add(g_9_135.pow(2))
+    .sqrt()
+    .rename('Gabor_energy_lambda9');
+  
+  // ========================================
+  // Combine all Gabor bands explicitly
+  // ========================================
+  
+  var gabor_all = ee.Image.cat([
+    // Wavelength 3
+    g_3_0, g_3_45, g_3_90, g_3_135, energy_3,
+    // Wavelength 5
+    g_5_0, g_5_45, g_5_90, g_5_135, energy_5,
+    // Wavelength 9
+    g_9_0, g_9_45, g_9_90, g_9_135, energy_9
+  ]);
+  
+  // Add to original image
+  return img.addBands(gabor_all);
+};
+
+
 // ========================================
 // GABOR PARAMETERS FOR PNW FORESTS
 // ========================================
@@ -391,50 +476,7 @@ var createGaborKernel = function(wavelength, orientation, sigma, gamma, psi) {
 // var gamma = 0.5;     // Spatial aspect ratio (elongated)
 // var psi = 0;         // Phase offset (symmetric)
 
-var applyGaborNIRTexture = function(img) {
-  var nir = img.select('nir')
-    .unitScale(0.10,0.65) // Statistical presets derived from GEDI samples across the study area.
-    .multiply(255)
-    .round()
-    .toByte()
-  
-  var wavelengths = [3, 5, 9];
-  var orientations = [0, 45, 90, 135];
-  var gamma = 0.5;
-  var psi = 0;
-  
-  var gabor_bands = [];
-  
-  wavelengths.forEach(function(wavelength) {
-    var sigma = wavelength / 2;
-    var responses_this_wavelength = [];
-    
-    orientations.forEach(function(orientation) {
-      var gabor_kernel = createGaborKernel(wavelength, orientation, sigma, gamma, psi);
-      var gabor_response = nir.convolve(gabor_kernel)
-        .rename('Gabor_lambda' + wavelength + '_theta' + orientation)
-        .toFloat();
-        
-      
-      responses_this_wavelength.push(gabor_response);
-      gabor_bands.push(gabor_response);
-    });
-    
-    // Energy
-    var energy = ee.ImageCollection.fromImages(responses_this_wavelength)
-      .map(function(img) { return img.pow(2); })
-      .sum()
-      .sqrt()
-      .rename('Gabor_energy_lambda' + wavelength)
-      .toFloat();
-    
-    gabor_bands.push(energy);
-  });
-  
-  var gabor_image = ee.Image.cat(gabor_bands).toFloat();
-  
-  return img.addBands(gabor_image);
-};
+
 
 
 
