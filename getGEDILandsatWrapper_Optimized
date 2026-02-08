@@ -392,7 +392,11 @@ var createGaborKernel = function(wavelength, orientation, sigma, gamma, psi) {
 // var psi = 0;         // Phase offset (symmetric)
 
 var applyGaborNIRTexture = function(img) {
-  var nir = img.select('nir');
+  var nir = img.select('nir')
+    .unitScale(0.10,0.65) // Statistical presets derived from GEDI samples across the study area.
+    .multiply(255)
+    .round()
+    .toByte()
   
   var wavelengths = [3, 5, 9];
   var orientations = [0, 45, 90, 135];
@@ -893,6 +897,12 @@ if (addGaborNIR){
   lsPrep_wIndicies = lsPrep_wIndicies.map(applyGaborNIRTexture)
   print('Applying NIR Gabor Texture')
 }
+
+//////////////////////////////////////////////////////////////////
+//
+//             Add Landsat Metadata Gabor
+//
+/////////////////////////////////////////////////////////////////
 
 
 var addLSMetadata = function(img){
