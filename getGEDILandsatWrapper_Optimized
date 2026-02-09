@@ -127,7 +127,7 @@ var imgTransform = null//null//[25, 0, 248650, 0, -25, 5323275]//[30,0,-2361915,
 // Name of Output CSV file
 var outName = 'BDe2_DataTable'
 // Name of Output Directory
-var outDir = "BDe2_Nu" //This must be created in Google Drive
+var outDir = "BDe2_Xi" //This must be created in Google Drive
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -645,7 +645,7 @@ var calculateDaymetNormals = function() {
           return img.addBands([Trange,Tmean])
       })
       )
-      return monthlyData.mean()
+      return monthlyDataMod.mean()
         .set('month', month)
         .rename(['tmax_norm', 'tmin_norm', 'prcp_norm', 'vp_norm', 'srad_norm', 'trange_norm','tmean_norm']);
     })
@@ -778,7 +778,7 @@ args.defringeL5 = true;
 args.applyCloudScore = true;
 args.applyFmaskCloudMask = true;
 
-args.applyTDOM = true//true;
+args.applyTDOM = false//true;
 args.applyFmaskCloudShadowMask = true;
 
 args.applyFmaskSnowMask = false//false;
