@@ -652,79 +652,118 @@ finalGedi_v2 = finalGedi_v2.map(addLatLon)
 //   return monthlyNormals;
 // };
 
-// var applyDaymetNormals = function(img) {
-//   var calculateDaymetNormals = function() {
-//   var daymet = ee.ImageCollection('NASA/ORNL/DAYMET_V4')
-//     .filterDate('1990-01-01', '2020-12-31')
-//     .select(['tmax', 'tmin', 'prcp', 'vp', 'srad']);
+var applyDaymetNormals = function(img) {
+  var calculateDaymetNormals = function() {
+  var daymet = ee.ImageCollection('NASA/ORNL/DAYMET_V4')
+    .filterDate('1990-01-01', '2020-12-31')
+    .select(['tmax', 'tmin', 'prcp', 'vp', 'srad']);
   
-//   var monthlyNormals = ee.ImageCollection(
-//     ee.List.sequence(1, 12).map(function(month) {
-//       var monthlyData = daymet.filter(ee.Filter.calendarRange(month, month, 'month'));
+  var monthlyNormals = ee.ImageCollection(
+    ee.List.sequence(1, 12).map(function(month) {
+      var monthlyData = daymet.filter(ee.Filter.calendarRange(month, month, 'month'));
       
-//       var monthlyDataMod = monthlyData.map(function(img) {
-//           var Tmax = img.select('tmax')
-//           var Tmin = img.select('tmin')
-//           var Trange = Tmax.subtract(Tmin).rename('trange')
-//           var Tmean = (Tmax.add(Tmin)).divide(2).rename('tmean')
+      var monthlyDataMod = monthlyData.map(function(img) {
+          var Tmax = img.select('tmax')
+          var Tmin = img.select('tmin')
+          var Trange = Tmax.subtract(Tmin).rename('trange')
+          var Tmean = (Tmax.add(Tmin)).divide(2).rename('tmean')
           
-//           return img.addBands([Trange,Tmean])
-//       })
-//       return monthlyDataMod.mean()
-//         .set('month', month)
-//         .rename(['tmax_norm', 'tmin_norm', 'prcp_norm', 'vp_norm', 'srad_norm', 'trange_norm','tmean_norm']);
-//     })
-//   );
-//   return monthlyNormals;
-//   };
+          return img.addBands([Trange,Tmean])
+      })
+      return monthlyDataMod.mean()
+        .set('month', month)
+        .rename(['tmax_norm', 'tmin_norm', 'prcp_norm', 'vp_norm', 'srad_norm', 'trange_norm','tmean_norm']);
+    })
+  );
+  return monthlyNormals;
+  };
   
-//   var daymetNormals = calculateDaymetNormals();
+  var daymetNormals = calculateDaymetNormals();
   
-//   var gediDate = ee.Date(img.get('system:time_start'));
-//   var month = gediDate.get('month');
-//   var monthNormal = daymetNormals.filter(ee.Filter.eq('month', month)).first();
+  var gediDate = ee.Date(img.get('system:time_start'));
+  var month = gediDate.get('month');
+  var monthNormal = daymetNormals.filter(ee.Filter.eq('month', month)).first();
   
-//   return img.addBands(monthNormal);
-// };
+  return img.addBands(monthNormal);
+};
 
 // Apply to GEDI raster BEFORE sampling
 
 
-// THEN add Daymet to points using sampleRegions
-var addDaymetToPoints = function(fc) {
-  // Group points by month to minimize Daymet image lookups
-  var months = ee.List.sequence(1, 12);
+// // THEN add Daymet to points using sampleRegions
+// var addDaymetToPoints = function(fc) {
+//   // Group points by month to minimize Daymet image lookups
+//   var months = ee.List.sequence(1, 12);
   
-  var pointsWithDaymet = ee.FeatureCollection(
-    months.map(function(month) {
-      var monthPoints = fc.filter(ee.Filter.eq('gediMonth', month));
+//   var pointsWithDaymet = ee.FeatureCollection(
+//     months.map(function(month) {
+//       var monthPoints = fc.filter(ee.Filter.eq('gediMonth', month));
       
-      // Calculate Daymet normal for this month
-      var daymet = ee.ImageCollection('NASA/ORNL/DAYMET_V4')
-        .filterDate('1990-01-01', '2020-12-31')
-        .filter(ee.Filter.calendarRange(month, month, 'month'))
-        .select(['tmax', 'tmin', 'prcp', 'vp', 'srad']);
+//       // Calculate Daymet normal for this month
+//       var daymet = ee.ImageCollection('NASA/ORNL/DAYMET_V4')
+//         .filterDate('1990-01-01', '2020-12-31')
+//         .filter(ee.Filter.calendarRange(month, month, 'month'))
+//         .select(['tmax', 'tmin', 'prcp', 'vp', 'srad']);
       
-      var daymetMean = daymet.map(function(img) {
-        var Tmax = img.select('tmax');
-        var Tmin = img.select('tmin');
-        var Trange = Tmax.subtract(Tmin).rename('trange');
-        var Tmean = Tmax.add(Tmin).divide(2).rename('tmean');
-        return img.addBands([Trange, Tmean]);
-      }).mean();
+//       var daymetMean = daymet.map(function(img) {
+//         var Tmax = img.select('tmax');
+//         var Tmin = img.select('tmin');
+//         var Trange = Tmax.subtract(Tmin).rename('trange');
+//         var Tmean = Tmax.add(Tmin).divide(2).rename('tmean');
+//         return img.addBands([Trange, Tmean]);
+//       }).mean();
       
-      // Sample Daymet at point locations
-      return daymetMean.sampleRegions({
-        collection: monthPoints,
-        scale: 1000,  // Native Daymet resolution
-        projection: 'EPSG:32610',
-        geometries: true
-      });
+//       // Sample Daymet at point locations
+//       return daymetMean.sampleRegions({
+//         collection: monthPoints,
+//         scale: 1000,  // Native Daymet resolution
+//         projection: 'EPSG:32610',
+//         geometries: true
+//       });
+//     })
+//   ).flatten();
+  
+//   return pointsWithDaymet;
+// };
+
+
+var applyDaymetNormals = function(img) {
+  var calculateDaymetNormals = function() {
+  var daymet = ee.ImageCollection('NASA/ORNL/DAYMET_V4')
+    .filterDate('1990-01-01', '2020-12-31')
+    .select(['tmax', 'tmin', 'prcp', 'vp', 'srad']);
+  
+  var monthlyNormals = ee.ImageCollection(
+    ee.List.sequence(1, 12).map(function(month) {
+      var monthlyData = daymet.filter(ee.Filter.calendarRange(month, month, 'month'));
+      
+      var monthlyDataMod = monthlyData.map(function(img) {
+          var Tmax = img.select('tmax')
+          var Tmin = img.select('tmin')
+          var Trange = Tmax.subtract(Tmin).rename('trange')
+          var Tmean = (Tmax.add(Tmin)).divide(2).rename('tmean')
+          
+          return img.addBands([Trange,Tmean])
+      })
+      return monthlyDataMod.mean()
+        .set('month', month)
+        .rename(['tmax_norm', 'tmin_norm', 'prcp_norm', 'vp_norm', 'srad_norm', 'trange_norm','tmean_norm']);
     })
-  ).flatten();
+  );
+  return monthlyNormals;
+  };
   
-  return pointsWithDaymet;
+  var daymetNormals = calculateDaymetNormals();
+  var gediDate = ee.Date(img.get('system:time_start'));
+  var month = gediDate.get('month');
+  var monthNormal = daymetNormals.filter(ee.Filter.eq('month', month)).first();
+  
+  // Store Daymet as image property instead of adding as bands
+  return img.set('daymet_normal', monthNormal);
 };
+
+
+
 
 // if (addDaymetNormals) {
 //   print('Adding DAYMET Climate Normals 1990-2020');
@@ -1271,6 +1310,49 @@ if (addHANDHydro){
 
 print(finalGedi_v2,'finalGedi_v2')
 
+
+
+
+// Apply metadata to GEDI
+if (addDaymetNormals) {
+  print('Adding DAYMET Climate Normals 1990-2020');
+  finalGedi_v2 = finalGedi_v2.map(applyDaymetNormals);
+  
+  // Sample GEDI AND extract Daymet at each point
+  var gediPoints = finalGedi_v2.map(function(img) {
+    var points = img.sample({
+      region: roi,
+      projection: gediProj,
+      geometries: true,
+      dropNulls: true
+    });
+    
+    var gediDate = img.date().format('YYYYMMdd');
+    var gediTimestamp = img.date().millis();
+    
+    // Get the Daymet image for this month
+    var daymetImg = ee.Image(img.get('daymet_normal'));
+    
+    points = points.map(function(feat) {
+      // Sample Daymet at this point's location
+      var daymetValue = daymetImg.reduceRegion({
+        reducer: ee.Reducer.first(),
+        geometry: feat.geometry(),
+        scale: 1000,  // Native Daymet resolution
+        crs: 'EPSG:32610',
+        bestEffort: false
+      });
+      
+      return feat.set({
+        'gediDate': gediDate,
+        'system:time_start': gediTimestamp
+      }).set(daymetValue);  // Add Daymet values as properties
+    });
+    
+    return points;
+  }).flatten();
+}
+
 var gediPoints = finalGedi_v2.map(function(img) {
   var points = img.sample({
     region: roi,
@@ -1286,19 +1368,14 @@ var gediPoints = finalGedi_v2.map(function(img) {
   points = points.map(function(feat) {
     return feat.set({
       'gediDate': gediDate,
-      'system:time_start': gediTimestamp,
-      'gediMonth':gediMonth
+      'system:time_start': gediTimestamp
+      // 'gediMonth':gediMonth
     });
   });
   
   return points;
 }).flatten();
 
-
-if (addDaymetNormals) {
-  print('Adding DAYMET Climate Normals 1990-2020');
-  gediPoints = addDaymetToPoints(gediPoints);
-}
 
 
 print('GEDI Points Count:', gediPoints.size());
