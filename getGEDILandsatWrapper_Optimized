@@ -652,40 +652,40 @@ finalGedi_v2 = finalGedi_v2.map(addLatLon)
 //   return monthlyNormals;
 // };
 
-var applyDaymetNormals = function(img) {
-  var calculateDaymetNormals = function() {
-  var daymet = ee.ImageCollection('NASA/ORNL/DAYMET_V4')
-    .filterDate('1990-01-01', '2020-12-31')
-    .select(['tmax', 'tmin', 'prcp', 'vp', 'srad']);
+// var applyDaymetNormals = function(img) {
+//   var calculateDaymetNormals = function() {
+//   var daymet = ee.ImageCollection('NASA/ORNL/DAYMET_V4')
+//     .filterDate('1990-01-01', '2020-12-31')
+//     .select(['tmax', 'tmin', 'prcp', 'vp', 'srad']);
   
-  var monthlyNormals = ee.ImageCollection(
-    ee.List.sequence(1, 12).map(function(month) {
-      var monthlyData = daymet.filter(ee.Filter.calendarRange(month, month, 'month'));
+//   var monthlyNormals = ee.ImageCollection(
+//     ee.List.sequence(1, 12).map(function(month) {
+//       var monthlyData = daymet.filter(ee.Filter.calendarRange(month, month, 'month'));
       
-      var monthlyDataMod = monthlyData.map(function(img) {
-          var Tmax = img.select('tmax')
-          var Tmin = img.select('tmin')
-          var Trange = Tmax.subtract(Tmin).rename('trange')
-          var Tmean = (Tmax.add(Tmin)).divide(2).rename('tmean')
+//       var monthlyDataMod = monthlyData.map(function(img) {
+//           var Tmax = img.select('tmax')
+//           var Tmin = img.select('tmin')
+//           var Trange = Tmax.subtract(Tmin).rename('trange')
+//           var Tmean = (Tmax.add(Tmin)).divide(2).rename('tmean')
           
-          return img.addBands([Trange,Tmean])
-      })
-      return monthlyDataMod.mean()
-        .set('month', month)
-        .rename(['tmax_norm', 'tmin_norm', 'prcp_norm', 'vp_norm', 'srad_norm', 'trange_norm','tmean_norm']);
-    })
-  );
-  return monthlyNormals;
-  };
+//           return img.addBands([Trange,Tmean])
+//       })
+//       return monthlyDataMod.mean()
+//         .set('month', month)
+//         .rename(['tmax_norm', 'tmin_norm', 'prcp_norm', 'vp_norm', 'srad_norm', 'trange_norm','tmean_norm']);
+//     })
+//   );
+//   return monthlyNormals;
+//   };
   
-  var daymetNormals = calculateDaymetNormals();
+//   var daymetNormals = calculateDaymetNormals();
   
-  var gediDate = ee.Date(img.get('system:time_start'));
-  var month = gediDate.get('month');
-  var monthNormal = daymetNormals.filter(ee.Filter.eq('month', month)).first();
+//   var gediDate = ee.Date(img.get('system:time_start'));
+//   var month = gediDate.get('month');
+//   var monthNormal = daymetNormals.filter(ee.Filter.eq('month', month)).first();
   
-  return img.addBands(monthNormal);
-};
+//   return img.addBands(monthNormal);
+// };
 
 // Apply to GEDI raster BEFORE sampling
 
