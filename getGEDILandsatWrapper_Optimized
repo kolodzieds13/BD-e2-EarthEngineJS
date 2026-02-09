@@ -623,21 +623,6 @@ finalGedi_v2 = finalGedi_v2.map(addLatLon)
 
 
 
-
-  // Calculate derived climate variables
-  var tmean = monthNormal.select('tmax_norm')
-    .add(monthNormal.select('tmin_norm'))
-    .divide(2)
-    .rename('tmean_norm');
-  
-  var trange = monthNormal.select('tmax_norm')
-    .subtract(monthNormal.select('tmin_norm'))
-    .rename('trange_norm');
-
-
-
-
-
 // AFTER finalGedi_v2 is created (as raster)
 // BEFORE converting to points
 
@@ -647,15 +632,22 @@ var calculateDaymetNormals = function() {
     .filterDate('1990-01-01', '2020-12-31')
     .select(['tmax', 'tmin', 'prcp', 'vp', 'srad']);
   
-  var tmean_norm = daymet.select[]
-  
-  
   var monthlyNormals = ee.ImageCollection(
     ee.List.sequence(1, 12).map(function(month) {
       var monthlyData = daymet.filter(ee.Filter.calendarRange(month, month, 'month'));
+      
+      var monthlyDataMod = monthlyData.map(function(img) {
+          var Tmax = img.select('tmax')
+          var Tmin = img.select('tmin')
+          var Trange = Tmax.subtract(Tmin).rename('trange')
+          var Tmean = (Tmax.add(Tmin)).divide(2).rename('tmean')
+          
+          return img.addBands([Trange,Tmean])
+      })
+      )
       return monthlyData.mean()
         .set('month', month)
-        .rename(['tmax_norm', 'tmin_norm', 'prcp_norm', 'vp_norm', 'srad_norm']);
+        .rename(['tmax_norm', 'tmin_norm', 'prcp_norm', 'vp_norm', 'srad_norm', 'trange_norm','tmean_norm']);
     })
   );
   return monthlyNormals;
@@ -666,18 +658,7 @@ var applyDaymetNormals = function(img) {
   var month = gediDate.get('month');
   var monthNormal = daymetNormals.filter(ee.Filter.eq('month', month)).first();
   
-    // Calculate derived climate variables
-  var tmean = monthNormal.select('tmax_norm')
-    .add(monthNormal.select('tmin_norm'))
-    .divide(2)
-    .rename('tmean_norm');
-  
-  var trange = monthNormal.select('tmax_norm')
-    .subtract(monthNormal.select('tmin_norm'))
-    .rename('trange_norm');
-  
-  
-  return img.addBands([monthNormal,tmean,trange]);
+  return img.addBands(monthNormal);
 };
 
 // Apply to GEDI raster BEFORE sampling
