@@ -717,7 +717,7 @@ var addDaymetToPoints = function(fc) {
       return daymetMean.sampleRegions({
         collection: monthPoints,
         scale: 1000,  // Native Daymet resolution
-        projection: 'EPSG:32610'
+        projection: 'EPSG:32610',
         geometries: true
       });
     })
