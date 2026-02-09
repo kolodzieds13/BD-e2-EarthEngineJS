@@ -83,6 +83,8 @@ var addHansenTreeLoss = true
 var addHANDHydro = true
 // Add Flow Index
 var addFlowIndex = true
+// Add DAYMET Climate Normals
+var addDaymetNormals = true
 
 
 
@@ -423,123 +425,6 @@ var applyGaborNIRTexture = function(img) {
 };
 
 
-
-
-
-
-
-
-
-
-// var applyGaborNIRTexture = function(img) {
-  
-//   var nir = img.select('nir');
-//   var nir_scaled = nir.unitScale(0.10, 0.65).multiply(255).round().toByte();
-  
-//   var gamma = 0.5;
-//   var psi = 0;
-  
-//   // ========================================
-//   // Explicitly create each Gabor band
-//   // ========================================
-  
-//   // Wavelength 3, all orientations
-//   var k_3_0 = createGaborKernel(3, 0, 1.5, gamma, psi);
-//   var k_3_45 = createGaborKernel(3, 45, 1.5, gamma, psi);
-//   var k_3_90 = createGaborKernel(3, 90, 1.5, gamma, psi);
-//   var k_3_135 = createGaborKernel(3, 135, 1.5, gamma, psi);
-  
-//   var g_3_0 = nir_scaled.convolve(k_3_0).rename('Gabor_lambda3_theta0');
-//   var g_3_45 = nir_scaled.convolve(k_3_45).rename('Gabor_lambda3_theta45');
-//   var g_3_90 = nir_scaled.convolve(k_3_90).rename('Gabor_lambda3_theta90');
-//   var g_3_135 = nir_scaled.convolve(k_3_135).rename('Gabor_lambda3_theta135');
-  
-//   var energy_3 = g_3_0.pow(2)
-//     .add(g_3_45.pow(2))
-//     .add(g_3_90.pow(2))
-//     .add(g_3_135.pow(2))
-//     .sqrt()
-//     .rename('Gabor_energy_lambda3');
-  
-//   // Wavelength 5, all orientations
-//   var k_5_0 = createGaborKernel(5, 0, 2.5, gamma, psi);
-//   var k_5_45 = createGaborKernel(5, 45, 2.5, gamma, psi);
-//   var k_5_90 = createGaborKernel(5, 90, 2.5, gamma, psi);
-//   var k_5_135 = createGaborKernel(5, 135, 2.5, gamma, psi);
-  
-//   var g_5_0 = nir_scaled.convolve(k_5_0).rename('Gabor_lambda5_theta0');
-//   var g_5_45 = nir_scaled.convolve(k_5_45).rename('Gabor_lambda5_theta45');
-//   var g_5_90 = nir_scaled.convolve(k_5_90).rename('Gabor_lambda5_theta90');
-//   var g_5_135 = nir_scaled.convolve(k_5_135).rename('Gabor_lambda5_theta135');
-  
-//   var energy_5 = g_5_0.pow(2)
-//     .add(g_5_45.pow(2))
-//     .add(g_5_90.pow(2))
-//     .add(g_5_135.pow(2))
-//     .sqrt()
-//     .rename('Gabor_energy_lambda5');
-  
-//   // Wavelength 9, all orientations
-//   var k_9_0 = createGaborKernel(9, 0, 4.5, gamma, psi);
-//   var k_9_45 = createGaborKernel(9, 45, 4.5, gamma, psi);
-//   var k_9_90 = createGaborKernel(9, 90, 4.5, gamma, psi);
-//   var k_9_135 = createGaborKernel(9, 135, 4.5, gamma, psi);
-  
-//   var g_9_0 = nir_scaled.convolve(k_9_0).rename('Gabor_lambda9_theta0');
-//   var g_9_45 = nir_scaled.convolve(k_9_45).rename('Gabor_lambda9_theta45');
-//   var g_9_90 = nir_scaled.convolve(k_9_90).rename('Gabor_lambda9_theta90');
-//   var g_9_135 = nir_scaled.convolve(k_9_135).rename('Gabor_lambda9_theta135');
-  
-//   var energy_9 = g_9_0.pow(2)
-//     .add(g_9_45.pow(2))
-//     .add(g_9_90.pow(2))
-//     .add(g_9_135.pow(2))
-//     .sqrt()
-//     .rename('Gabor_energy_lambda9');
-  
-//   // ========================================
-//   // Combine all Gabor bands explicitly
-//   // ========================================
-  
-//   var gabor_all = ee.Image.cat([
-//     // Wavelength 3
-//     g_3_0, g_3_45, g_3_90, g_3_135, energy_3,
-//     // Wavelength 5
-//     g_5_0, g_5_45, g_5_90, g_5_135, energy_5,
-//     // Wavelength 9
-//     g_9_0, g_9_45, g_9_90, g_9_135, energy_9
-//   ]);
-  
-//   // Add to original image
-//   return img.addBands(gabor_all);
-// };
-
-
-// ========================================
-// GABOR PARAMETERS FOR PNW FORESTS
-// ========================================
-
-// // Wavelengths (scales) - in pixels at 30m resolution
-// var wavelengths = [3, 5, 9];  // 90m, 150m, 270m
-// // - 3 pixels (90m): Individual tree crowns / fine texture
-// // - 5 pixels (150m): Stand-level patterns / medium texture
-// // - 9 pixels (270m): Landscape-level / coarse texture
-
-// // Orientations (directions)
-// var orientations = [0, 45, 90, 135];  // degrees
-// // - 0°: East-West patterns (horizontal)
-// // - 45°: Northeast-Southwest diagonal
-// // - 90°: North-South patterns (vertical) - PNW ridges!
-// // - 135°: Northwest-Southeast diagonal
-
-// // Other parameters
-// var gamma = 0.5;     // Spatial aspect ratio (elongated)
-// var psi = 0;         // Phase offset (symmetric)
-
-
-
-
-
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 //                Band Dictionary
@@ -735,6 +620,75 @@ finalGedi_v2 = finalGedi_v2.map(addLatLon)
 //   finalGedi_v2 = finalGedi_v2.map(beamFilter)
 //   finalGedi_v2 = finalGedi_v2.map(addLatLon)
 // }
+
+
+
+
+  // Calculate derived climate variables
+  var tmean = monthNormal.select('tmax_norm')
+    .add(monthNormal.select('tmin_norm'))
+    .divide(2)
+    .rename('tmean_norm');
+  
+  var trange = monthNormal.select('tmax_norm')
+    .subtract(monthNormal.select('tmin_norm'))
+    .rename('trange_norm');
+
+
+
+
+
+// AFTER finalGedi_v2 is created (as raster)
+// BEFORE converting to points
+
+// ===== ADD DAYMET NORMALS TO GEDI RASTER =====
+var calculateDaymetNormals = function() {
+  var daymet = ee.ImageCollection('NASA/ORNL/DAYMET_V4')
+    .filterDate('1990-01-01', '2020-12-31')
+    .select(['tmax', 'tmin', 'prcp', 'vp', 'srad']);
+  
+  var tmean_norm = daymet.select[]
+  
+  
+  var monthlyNormals = ee.ImageCollection(
+    ee.List.sequence(1, 12).map(function(month) {
+      var monthlyData = daymet.filter(ee.Filter.calendarRange(month, month, 'month'));
+      return monthlyData.mean()
+        .set('month', month)
+        .rename(['tmax_norm', 'tmin_norm', 'prcp_norm', 'vp_norm', 'srad_norm']);
+    })
+  );
+  return monthlyNormals;
+};
+
+var applyDaymetNormals = function(img) {
+  var gediDate = ee.Date(img.get('system:time_start'));
+  var month = gediDate.get('month');
+  var monthNormal = daymetNormals.filter(ee.Filter.eq('month', month)).first();
+  
+    // Calculate derived climate variables
+  var tmean = monthNormal.select('tmax_norm')
+    .add(monthNormal.select('tmin_norm'))
+    .divide(2)
+    .rename('tmean_norm');
+  
+  var trange = monthNormal.select('tmax_norm')
+    .subtract(monthNormal.select('tmin_norm'))
+    .rename('trange_norm');
+  
+  
+  return img.addBands([monthNormal,tmean,trange]);
+};
+
+// Apply to GEDI raster BEFORE sampling
+
+if (addDaymetNormals) {
+  print('Adding DAYMET Climate Normals 1990-2020')
+  var daymetNormals = calculateDaymetNormals();
+  finalGedi_v2 = finalGedi_v2.map(applyDaymetNormals)
+}
+
+
 
 
 
