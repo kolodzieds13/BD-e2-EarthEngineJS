@@ -10,7 +10,6 @@ Map.centerObject(studyArea, 8);
 
 
 //Module imports
-// var getImagesLib = require('users/aaronkamoske/GTAC-Modules:getImagesLib.js');
 var getImagesLib = require('users/rcr-training/geeViz-js:getImagesLib.js');
 
 var yearToday = new Date().toLocaleString("en-US",{timeZone:"America/Denver",year:"numeric"})
@@ -56,12 +55,11 @@ var addGLCMEVI = false
 var addGLCMNIR = true
 // This will apply a GLCM analysis contrast against "SWIR1" for all Landsat Images.
 var addGLCMSWIR1 = true
-// This will apply a GLCM analysis contrast, shade, and variance against "TC Wetness" for all Landsat Images.
+// This will apply a GLCM analysis contrast, idm, and variance against "TC Wetness" for all Landsat Images.
 var addGLCMWetness = true
-
+// This will apply a Gabor Texture analysis on NIR for all Landsat Images.
+// Analysis is conducted on [3,5,7,9] windows on [0,45,90,135] direction
 var addGaborNIR = true
-
-
 // Desired LandsatBands
 // If True, GEDI observation will only record values of blue,green,red,nir,swir1,swir2,NDVI,and EVI
 // This is ideal to minimize GEE computations
@@ -622,7 +620,6 @@ finalGedi_v2 = finalGedi_v2.map(addLatLon)
 // }
 
 
-
 // AFTER finalGedi_v2 is created (as raster)
 // BEFORE converting to points
 
@@ -660,7 +657,7 @@ var applyDaymetNormals99 = function(img) {
   var monthNormal = daymetNormals.filter(ee.Filter.eq('month', month)).first();
   
   var daymetReproj = monthNormal.reproject({
-    crs: 'EPSG:32610',
+    crs: 'EPSG:32610', // This needs to be addressed
     scale: 1000  // Keep at native 1km resolution
   }); 
   
@@ -668,80 +665,6 @@ var applyDaymetNormals99 = function(img) {
   return img.addBands(daymetReproj);
 };
 
-// Apply to GEDI raster BEFORE sampling
-
-
-// // THEN add Daymet to points using sampleRegions
-// var addDaymetToPoints = function(fc) {
-//   // Group points by month to minimize Daymet image lookups
-//   var months = ee.List.sequence(1, 12);
-  
-//   var pointsWithDaymet = ee.FeatureCollection(
-//     months.map(function(month) {
-//       var monthPoints = fc.filter(ee.Filter.eq('gediMonth', month));
-      
-//       // Calculate Daymet normal for this month
-//       var daymet = ee.ImageCollection('NASA/ORNL/DAYMET_V4')
-//         .filterDate('1990-01-01', '2020-12-31')
-//         .filter(ee.Filter.calendarRange(month, month, 'month'))
-//         .select(['tmax', 'tmin', 'prcp', 'vp', 'srad']);
-      
-//       var daymetMean = daymet.map(function(img) {
-//         var Tmax = img.select('tmax');
-//         var Tmin = img.select('tmin');
-//         var Trange = Tmax.subtract(Tmin).rename('trange');
-//         var Tmean = Tmax.add(Tmin).divide(2).rename('tmean');
-//         return img.addBands([Trange, Tmean]);
-//       }).mean();
-      
-//       // Sample Daymet at point locations
-//       return daymetMean.sampleRegions({
-//         collection: monthPoints,
-//         scale: 1000,  // Native Daymet resolution
-//         projection: 'EPSG:32610',
-//         geometries: true
-//       });
-//     })
-//   ).flatten();
-  
-//   return pointsWithDaymet;
-// };
-
-
-// var applyDaymetNormals = function(img) {
-//   var calculateDaymetNormals = function() {
-//   var daymet = ee.ImageCollection('NASA/ORNL/DAYMET_V4')
-//     .filterDate('1990-01-01', '2020-12-31')
-//     .select(['tmax', 'tmin', 'prcp', 'vp', 'srad']);
-  
-//   var monthlyNormals = ee.ImageCollection(
-//     ee.List.sequence(1, 12).map(function(month) {
-//       var monthlyData = daymet.filter(ee.Filter.calendarRange(month, month, 'month'));
-      
-//       var monthlyDataMod = monthlyData.map(function(img) {
-//           var Tmax = img.select('tmax')
-//           var Tmin = img.select('tmin')
-//           var Trange = Tmax.subtract(Tmin).rename('trange')
-//           var Tmean = (Tmax.add(Tmin)).divide(2).rename('tmean')
-          
-//           return img.addBands([Trange,Tmean])
-//       })
-//       return monthlyDataMod.mean()
-//         .set('month', month)
-//         .rename(['tmax_norm', 'tmin_norm', 'prcp_norm', 'vp_norm', 'srad_norm', 'trange_norm','tmean_norm']);
-//     })
-//   );
-//   return monthlyNormals;
-//   };
-  
-//   var daymetNormals = calculateDaymetNormals();
-//   var gediDate = ee.Date(img.get('system:time_start'));
-//   var month = gediDate.get('month');
-//   var monthNormal = daymetNormals.filter(ee.Filter.eq('month', month)).first();
-  
-//   // Store Daymet as image property instead of adding as bands
-//   return img.set('daymet_normal', monthNormal);
-// };
 
 var roi = AOI.geometry().bounds(100,gediProj)
 
@@ -775,18 +698,16 @@ args.studyArea = AOI//Kenobi_AOI//AOI;
   // Summer = 152 - 244: June through August
   // Fall = 244 - 335: Sepetember through November
   // Winter = 335 - 60: December through February
-
-
-
-args.startJulian = startJulian;  //152
-args.endJulian = endJulian;    // 244
+  
+args.startJulian = startJulian;
+args.endJulian = endJulian;    
 
 // Specify start and end years for all analyses
 // More than a 3 year span should be provided for time series methods to work 
 // well. If providing pre-computed stats for cloudScore and TDOM, this does not 
 // matter
-args.startYear = startYear; //2000
-args.endYear = endYear; //2022
+args.startYear = startYear; 
+args.endYear = endYear; 
 
 var StartYr = args.startYear//ee.Number(args.startYear);
 var EndYr = args.endYear//ee.Number(args.endYear);
@@ -1025,17 +946,14 @@ if (addGaborNIR){
     k_9_90: createGaborKernel(9, 90, 4.5, gamma, psi),
     k_9_135: createGaborKernel(9, 135, 4.5, gamma, psi)
   };
-
   print('Kernels pre-computed:', Object.keys(KERNELS).length);
-
   
   lsPrep_wIndicies = lsPrep_wIndicies.map(applyGaborNIRTexture)
-  
 }
 
 //////////////////////////////////////////////////////////////////
 //
-//             Add Landsat Metadata Gabor
+//             Add Landsat Metadata 
 //
 /////////////////////////////////////////////////////////////////
 
@@ -1266,49 +1184,6 @@ if (addHANDHydro){
 
 print(finalGedi_v2,'finalGedi_v2')
 
-
-
-// THIS IS GOLD FOR NOW. COMEBACK
-// Apply metadata to GEDI
-// if (addDaymetNormals) {
-//   print('Adding DAYMET Climate Normals 1990-2020');
-//   finalGedi_v2 = finalGedi_v2.map(applyDaymetNormals);
-  
-//   // Sample GEDI AND extract Daymet at each point
-//   var gediPoints = finalGedi_v2.map(function(img) {
-//     var points = img.sample({
-//       region: roi,
-//       projection: gediProj,
-//       geometries: true,
-//       dropNulls: true
-//     });
-    
-//     var gediDate = img.date().format('YYYYMMdd');
-//     var gediTimestamp = img.date().millis();
-    
-//     // Get the Daymet image for this month
-//     var daymetImg = ee.Image(img.get('daymet_normal'));
-    
-//     points = points.map(function(feat) {
-//       // Sample Daymet at this point's location
-//       var daymetValue = daymetImg.reduceRegion({
-//         reducer: ee.Reducer.first(),
-//         geometry: feat.geometry(),
-//         scale: 1000,  // Native Daymet resolution
-//         crs: 'EPSG:32610',
-//         bestEffort: false
-//       });
-      
-//       return feat.set({
-//         'gediDate': gediDate,
-//         'system:time_start': gediTimestamp
-//       }).set(daymetValue);  // Add Daymet values as properties
-//     });
-    
-//     return points;
-//   }).flatten();
-// }
-
 // Apply metadata to GEDI
 if (addDaymetNormals) {
   print('Adding DAYMET Climate Normals 1990-2020');
@@ -1338,17 +1213,7 @@ var gediPoints = finalGedi_v2.map(function(img) {
   return points;
 }).flatten();
 
-
-
 print('GEDI Points Count:', gediPoints.size());
-
-
-
-
-
-
-
-
 
 
 
