@@ -9,6 +9,14 @@ Map.addLayer(studyArea,{},'Study AREA')
 Map.centerObject(studyArea, 8); 
 
 
+// // Import AOI geometry. This could be an import shapefile.
+// var studyArea = ee.Geometry.Polygon(
+//         [[[-124.1908214570261, 48.01747940426768],
+//           [-124.1908214570261, 47.88318938949384],
+//           [-123.93401603710423, 47.88318938949384],
+//           [-123.93401603710423, 48.01747940426768]]], null, false);
+
+
 //Module imports
 var getImagesLib = require('users/rcr-training/geeViz-js:getImagesLib.js');
 
