@@ -107,7 +107,7 @@ var endYear= 2019
 var AOI = studyArea//Kenobi_TileSchema_v5.filter(ee.Filter.eq('zoneID',IDs)) //comeback
 
 // Select Projection
-// Leave as 'null' for GEE to use the 'first' image projection within the study area. This is unusually a UTM.
+// Leave as 'null' for GEE to use the 'first' image projection within the study area. This is usually a UTM.
 var imgCRS = null //5070 / 32610
 // Select Scale: Desired resolution of data.
 var imgScale = null
